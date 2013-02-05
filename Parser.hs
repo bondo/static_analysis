@@ -2,7 +2,7 @@ module Parser (parseFile, parseString) where
 
 import Ast
 
-import Control.Applicative ((<*), (<$>), liftA2)
+import Control.Applicative ((<*), (<$>))
 import Text.Parsec hiding (parse)
 import Text.Parsec.Expr
 import qualified Text.Parsec.Token as P
