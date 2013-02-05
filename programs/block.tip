@@ -1,7 +1,0 @@
-main() {
-	var x;
-	{
-		x = input;
-	}
-	return x;
-}
