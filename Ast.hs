@@ -31,9 +31,11 @@ data Stm = SAss Id Expr
          | SWhile Expr Stm
          | SDecl [Id]
          | SReturn Expr
+         | SNop
          deriving (Show)
 
 data Function = FNamed Id [Id] Stm -- Name, arguments, body
+              | FNamedReturn Id [Id] Stm Expr -- Name, arguments, body, return
               deriving (Show)
                   
 type Program = [Function]
