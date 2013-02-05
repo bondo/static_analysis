@@ -2,6 +2,8 @@ module Weeder (weed) where
 
 import Ast
 
+import Control.Monad.Instances -- Instance for (Monad (Either String))
+
 {-
   TODO:
     * make sure no SReturn exists
