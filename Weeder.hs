@@ -6,11 +6,11 @@ import Control.Monad.Instances
 
 {-
   TODO:
-    * "compress" statements
     * make sure no SReturn exists
     * make sure identifiers are unique
   DONE:
     * Convert FNamed to FNamedReturn
+    * "compress" statements
 -}
 
 weed :: Program -> Either String Program
