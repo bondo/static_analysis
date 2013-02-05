@@ -89,12 +89,8 @@ parseStm = SSeq <$> (many1 stm1)
                <|> do { reserved "if"
                       ; e <- parens parseExpr
                       ; sif <- braces parseStm
-                      ; stm <- do { reserved "else"
-                                  ; selse <- braces parseStm
-                                  ; return (SIfElse e sif selse)
-                                  }
-                               <|> return (SIf e sif)
-                      ; return stm
+                      ; selse <- (reserved "else" >> braces parseStm) <|> return SNop
+                      ; return $ SIfElse e sif selse
                       }
                <|> do { reserved "while"
                       ; e <- parens parseExpr

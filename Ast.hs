@@ -26,15 +26,15 @@ data Stm = SAss Id Expr
          | SAssRef Id Expr -- *id = E
          | SOutput Expr
          | SSeq [Stm]
-         | SIf Expr Stm
+--       | SIf Expr Stm -- Just use SNop in the else branch
          | SIfElse Expr Stm Stm
          | SWhile Expr Stm
          | SDecl [Id]
-         | SReturn Expr
+         | SReturn Expr -- Only use this to simplify passing, weed it out later
          | SNop
          deriving (Show)
 
-data Function = FNamed Id [Id] Stm -- Name, arguments, body
+data Function = FNamed Id [Id] Stm -- Use when there's SReturns in Stm, convert to FNamedReturn later
               | FNamedReturn Id [Id] Stm Expr -- Name, arguments, body, return
               deriving (Show)
                   
