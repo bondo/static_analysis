@@ -33,10 +33,10 @@ cleanFunction (FNamed name _ _) =
 cleanFunction (FNamedReturn n f s r) = Right $ FNamedReturn n f (compressStm s) r
 
 compressStm :: Stm -> Stm
-compressStm (SSeq []) = SNop
-compressStm (SSeq [s]) = compressStm s
-compressStm (SSeq ss) = SSeq $ map compressStm ss
-compressStm (SIf e s) = SIf e $ compressStm s
+compressStm (SSeq [])         = SNop
+compressStm (SSeq [s])        = compressStm s
+compressStm (SSeq ss)         = SSeq $ map compressStm ss
+compressStm (SIf e s)         = SIf e $ compressStm s
 compressStm (SIfElse e s1 s2) = SIfElse e (compressStm s1) (compressStm s2)
-compressStm (SWhile e s) = SWhile e $ compressStm s
-compressStm s = s
+compressStm (SWhile e s)      = SWhile e $ compressStm s
+compressStm s                 = s
