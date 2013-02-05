@@ -2,8 +2,6 @@ module Weeder (weed) where
 
 import Ast
 
-import Control.Monad.Instances
-
 {-
   TODO:
     * make sure no SReturn exists
@@ -20,17 +18,14 @@ missingReturn = "Return statement missing at the end of "
 
 -- Do the conversion and compression
 cleanFunction :: Function -> Either String Function
-cleanFunction (FNamed name _ (SSeq [])) =
-  Left $ missingReturn ++ name
+cleanFunction (FNamed name _ (SSeq []))       = Left $ missingReturn ++ name
 cleanFunction (FNamed name formals (SSeq ss)) =
   case last ss of
     SReturn ret -> Right $ FNamedReturn name formals (compressStm . SSeq $ init ss) ret
     _           -> Left  $ missingReturn ++ name
-cleanFunction (FNamed name formals (SReturn expr)) =
-  Right $ FNamedReturn name formals SNop expr
-cleanFunction (FNamed name _ _) =
-  Left $ missingReturn ++ name
-cleanFunction (FNamedReturn n f s r) = Right $ FNamedReturn n f (compressStm s) r
+cleanFunction (FNamed name formals (SReturn expr)) = Right $ FNamedReturn name formals SNop expr
+cleanFunction (FNamed name _ _)                    = Left $ missingReturn ++ name
+cleanFunction (FNamedReturn n f s r)               = Right $ FNamedReturn n f (compressStm s) r
 
 compressStm :: Stm -> Stm
 compressStm (SSeq [])         = SNop
