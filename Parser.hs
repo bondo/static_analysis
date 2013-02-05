@@ -22,13 +22,17 @@ parseString = parse "<insert filename here>"
 
 opLetters = "+-*/>=&"
 
-def = emptyDef{ P.identStart = letter
-              , P.identLetter = alphaNum
-              , P.opStart  = oneOf opLetters
-              , P.opLetter = oneOf opLetters
+def = emptyDef{ P.identStart      = letter
+              , P.identLetter     = alphaNum
+              , P.opStart         = oneOf opLetters
+              , P.opLetter        = oneOf opLetters
               , P.reservedOpNames = ["+", "-", "*", "/", ">", "==", "=", "&"]
-              , P.reservedNames = ["input", "output", "if", "else", "while",
-                                   "var", "return", "malloc", "null"]
+              , P.reservedNames   = ["input", "output", "if", "else", "while",
+                                     "var", "return", "malloc", "null"]
+              , P.commentLine     = "//"
+              , P.commentStart    = "/*"
+              , P.commentEnd      = "*/"
+              , P.nestedComments  = False
               }
 
 P.TokenParser{ P.parens     = parens
@@ -46,7 +50,6 @@ P.TokenParser{ P.parens     = parens
 
 -- The parser
 
-type GUID = Int
 type Parser = Parsec String GUID
 
 guid :: Parser GUID
