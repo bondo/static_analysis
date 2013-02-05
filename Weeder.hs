@@ -8,9 +8,6 @@ import Control.Monad.Instances -- Instance for (Monad (Either String))
   TODO:
     * make sure no SReturn exists
     * make sure identifiers are unique
-  DONE:
-    * Convert FNamed to FNamedReturn
-    * "compress" statements
 -}
 
 weed :: Program -> Either String Program
@@ -18,7 +15,7 @@ weed = sequence . map cleanFunction
 
 missingReturn = "Return statement missing at the end of "
 
--- Do the conversion and compression
+-- Convert FNamed to FNamedReturn and "compress" statements
 cleanFunction :: Function -> Either String Function
 cleanFunction (FNamed name _ (SSeq []))       = Left $ missingReturn ++ name
 cleanFunction (FNamed name formals (SSeq ss)) =
@@ -26,9 +23,10 @@ cleanFunction (FNamed name formals (SSeq ss)) =
     SReturn ret -> Right $ FNamedReturn name formals (compressStm . SSeq $ init ss) ret
     _           -> Left  $ missingReturn ++ name
 cleanFunction (FNamed name formals (SReturn expr)) = Right $ FNamedReturn name formals SNop expr
-cleanFunction (FNamed name _ _)                    = Left $ missingReturn ++ name
+cleanFunction (FNamed name _ _)                    = Left  $ missingReturn ++ name
 cleanFunction (FNamedReturn n f s r)               = Right $ FNamedReturn n f (compressStm s) r
 
+-- The parser emits a lot more SSeq then it should, so clean it up a bit
 compressStm :: Stm -> Stm
 compressStm (SSeq [])         = SNop
 compressStm (SSeq [s])        = compressStm s
