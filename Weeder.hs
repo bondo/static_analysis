@@ -15,18 +15,17 @@ weed = sequence . map cleanFunction
 
 missingReturn = "Return statement missing at the end of "
 
--- Convert FNamed to FNamedReturn and "compress" statements
+-- Convert FNamedSimple to FNamed and "compress" statements
 cleanFunction :: Function -> Either String Function
-cleanFunction (FNamed name _ (SSeq []))       = Left $ missingReturn ++ name
-cleanFunction (FNamed name formals (SSeq ss)) =
-  case last ss of
-    SReturn ret -> Right $ FNamedReturn name formals (compressStm . SSeq $ init ss) ret
-    _           -> Left  $ missingReturn ++ name
-cleanFunction (FNamed name formals (SReturn expr)) = Right $ FNamedReturn name formals SNop expr
-cleanFunction (FNamed name _ _)                    = Left  $ missingReturn ++ name
-cleanFunction (FNamedReturn n f s r)               = Right $ FNamedReturn n f (compressStm s) r
+cleanFunction (FNamedSimple name _ (SSeq []))       = Left $ missingReturn ++ name
+cleanFunction (FNamedSimple name formals (SSeq ss)) = case last ss of
+  SReturn ret -> Right $ FNamed name formals (compressStm . SSeq $ init ss) ret
+  _           -> Left  $ missingReturn ++ name
+cleanFunction (FNamedSimple name formals (SReturn expr)) = Right $ FNamed name formals SNop expr
+cleanFunction (FNamedSimple name _ _)                    = Left  $ missingReturn ++ name
+cleanFunction (FNamed n f s r)                           = Right $ FNamed n f (compressStm s) r
 
--- The parser emits a lot more SSeq then it should, so clean it up a bit
+-- The parser emits a lot more SSeq then it should, so clean it up
 compressStm :: Stm -> Stm
 compressStm (SSeq [])         = SNop
 compressStm (SSeq [s])        = compressStm s
