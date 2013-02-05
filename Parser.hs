@@ -93,7 +93,6 @@ parseStm = SSeq <$> (many1 stm1)
                       e <- parens parseExpr
                       s <- braces parseStm
                       return $ SWhile e s
-                     
                <?> "statement"
 
 parseFunction :: Parser Function
