@@ -73,37 +73,33 @@ parseStm = SSeq <$> (many1 stm1)
   where stm1 = (reserved "output" >> SOutput <$> parseExpr <* semi)
                <|> (reserved "var" >> SDecl <$> commaSep1 identifier <* semi)
                <|> (reserved "return" >> SReturn <$> parseExpr <* semi)
-               <|> do { v <- identifier
-                      ; reservedOp "="
-                      ; e <- parseExpr
-                      ; semi
-                      ; return (SAss v e)
-                      }
-               <|> do { reservedOp "*"
-                      ; v <- identifier
-                      ; reservedOp "="
-                      ; e <- parseExpr
-                      ; semi
-                      ; return (SAssRef v e)
-                      }
-               <|> do { reserved "if"
-                      ; e <- parens parseExpr
-                      ; sif <- braces parseStm
-                      ; selse <- (reserved "else" >> braces parseStm) <|> return SNop
-                      ; return $ SIfElse e sif selse
-                      }
-               <|> do { reserved "while"
-                      ; e <- parens parseExpr
-                      ; s <- braces parseStm
-                      ; return (SWhile e s)
-                      }
+               <|> do v <- identifier
+                      reservedOp "="
+                      e <- parseExpr
+                      semi
+                      return $ SAss v e
+               <|> do reservedOp "*"
+                      v <- identifier
+                      reservedOp "="
+                      e <- parseExpr
+                      semi
+                      return $ SAssRef v e
+               <|> do reserved "if"
+                      e <- parens parseExpr
+                      sif <- braces parseStm
+                      selse <- (reserved "else" >> braces parseStm) <|> return SNop
+                      return $ SIfElse e sif selse
+               <|> do reserved "while"
+                      e <- parens parseExpr
+                      s <- braces parseStm
+                      return $ SWhile e s
+                     
                <?> "statement"
 
 parseFunction :: Parser Function
-parseFunction = do { name <- identifier
-                   ; arguments <- parens $ commaSep identifier
-                   ; braces $ (FNamed name arguments) <$> parseStm
-                   }
+parseFunction = do name <- identifier
+                   arguments <- parens $ commaSep identifier
+                   braces $ (FNamed name arguments) <$> parseStm
 
 parseProgram :: Parser Program
 parseProgram = whiteSpace >> many parseFunction <* eof
