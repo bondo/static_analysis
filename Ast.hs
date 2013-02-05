@@ -63,19 +63,21 @@ showProgram p = intercalate "\n\n" $ map show p
 commasep :: [String] -> Doc
 commasep xs = hcat . punctuate (comma <> space) $ map text xs
 
+tabSize = 4
+
 doc :: Stm -> Doc
 doc (SAss n v)      = text n <+> char '=' <+> text (show v) <> char ';'
 doc (SAssRef n v)   = char '&' <> text n <+> char '=' <+> text (show v) <> char ';'
 doc (SOutput v)     = text "output" <+> text (show v) <> char ';'
 doc (SSeq ss)       = vcat $ map doc ss
 doc (SIfElse c t e) = vcat [ text "if" <+> text (show c) <+> lbrace
-                           , nest 4 $ doc t
+                           , nest tabSize $ doc t
                            , rbrace <+> text "else" <+> lbrace
-                           , nest 4 $ doc e
+                           , nest tabSize $ doc e
                            , rbrace
                            ]
 doc (SWhile c b)    = vcat [ text "while" <+> text (show c) <+> lbrace
-                           , nest 4 $ doc b
+                           , nest tabSize $ doc b
                            , rbrace
                            ]
 doc (SDecl ids)     = text "var" <+> commasep ids <> char ';'
@@ -118,11 +120,11 @@ instance Show Stm where
 
 instance Show Function where
   show (FNamedSimple n f b) = render $ vcat [ text n <> parens (commasep f) <+> lbrace
-                                            , nest 4 $ doc b
+                                            , nest tabSize $ doc b
                                             , rbrace
                                             ]
   show (FNamed n f b r) = render $ vcat [ text n <> parens (commasep f) <+> lbrace
-                                        , nest 4 $ doc b
-                                        , nest 4 (text "return" <+> text (show r) <> char ';')
+                                        , nest tabSize $ doc b
+                                        , nest tabSize (text "return" <+> text (show r) <> char ';')
                                         , rbrace
                                         ]
