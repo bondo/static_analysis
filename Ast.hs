@@ -10,20 +10,16 @@ type Id = String
 type Expr = Expression GUID
 
 data Expression a = -- E
-    EConst { e_val  :: Int, e_uid :: a } -- intconst
-  | EVar   { e_name :: Id,  e_uid :: a } -- id
-
-  | EBinOp { e_op   :: BinOp, e_left :: Expression a, e_right :: Expression a, e_uid :: a } -- E BinOp E
-
+    EConst      { e_val  :: Int, e_uid :: a } -- intconst
+  | EVar        { e_name :: Id,  e_uid :: a } -- id
+  | EBinOp      { e_op   :: BinOp, e_left :: Expression a, e_right :: Expression a, e_uid :: a } -- E BinOp E
   | EAppNamed   { e_name :: Id,           e_args :: [Expression a], e_uid :: a } -- id(E,...,E)
   | EAppUnnamed { e_expr :: Expression a, e_args :: [Expression a], e_uid :: a } -- (E)(E,...,E)
-
-  | ERef   { e_name :: Id,           e_uid :: a } -- &id
-  | EDeRef { e_expr :: Expression a, e_uid :: a } -- *E
-
-  | EInput  { e_uid  :: a }
-  | EMalloc { e_uid  :: a }
-  | ENull   { e_uid  :: a }
+  | ERef        { e_name :: Id,           e_uid :: a } -- &id
+  | EDeRef      { e_expr :: Expression a, e_uid :: a } -- *E
+  | EInput      { e_uid  :: a }
+  | EMalloc     { e_uid  :: a }
+  | ENull       { e_uid  :: a }
 
 data BinOp = BPlus
            | BMinus
