@@ -63,13 +63,13 @@ guid = do uid <- fst <$> getState
           modifyState $ mapFst (+1)
           return uid
 
-variable :: Parser Expr
-variable = do id <- identifier
-              vars <- snd <$> getState
-              maybe (new id) (return . EVar id) $ lookup id vars
+ident :: Parser Id
+ident = do id <- identifier
+           vars <- snd <$> getState
+           maybe (new id) (return . Id id) $ lookup id vars
   where new id = do uid <- guid
                     modifyState $ mapSnd ((id, uid):)
-                    return $ EVar id uid
+                    return $ Id id uid
 
 parseExpr :: Parser Expr
 parseExpr = buildExpressionParser table term
@@ -77,7 +77,7 @@ parseExpr = buildExpressionParser table term
   where term = do i <- integer
                   uid <- guid
                   return $ EConst (fromInteger i) uid
-               <|> try (do id <- identifier
+               <|> try (do id <- ident
                            es <- parens $ commaSep parseExpr
                            uid <- guid
                            return $ EAppNamed id es uid)
@@ -85,13 +85,13 @@ parseExpr = buildExpressionParser table term
                            es <- parens $ commaSep parseExpr
                            uid <- guid
                            return $ EAppUnnamed e es uid)
-               <|> variable
+               <|> (ident >>= return . EVar)
                <|> parens parseExpr
                <|> (reserved "input" >> guid >>= return . EInput)
                <|> (reserved "malloc" >> guid >>= return . EMalloc)
                <|> (reserved "null" >> guid >>= return . ENull)
                <|> do reservedOp "&"
-                      id <- identifier
+                      id <- ident
                       uid <- guid
                       return $ ERef id uid
                <?> "expression term"
@@ -107,15 +107,15 @@ parseExpr = buildExpressionParser table term
 parseStm :: Parser Stm
 parseStm = SSeq <$> (many1 stm1)
   where stm1 = (reserved "output" >> SOutput <$> parseExpr <* semi)
-               <|> (reserved "var" >> SDecl <$> commaSep1 identifier <* semi)
+               <|> (reserved "var" >> SDecl <$> commaSep1 ident <* semi)
                <|> (reserved "return" >> SReturn <$> parseExpr <* semi)
-               <|> do v <- identifier
+               <|> do v <- ident
                       reservedOp "="
                       e <- parseExpr
                       semi
                       return $ SAss v e
                <|> do reservedOp "*"
-                      v <- identifier
+                      v <- ident
                       reservedOp "="
                       e <- parseExpr
                       semi
@@ -132,8 +132,8 @@ parseStm = SSeq <$> (many1 stm1)
                <?> "statement"
 
 parseFunction :: Parser Function
-parseFunction = do name <- identifier
-                   arguments <- parens $ commaSep identifier
+parseFunction = do name <- ident
+                   arguments <- parens $ commaSep ident
                    braces $ (FNamedSimple name arguments) <$> parseStm
 
 parseProgram :: Parser Program

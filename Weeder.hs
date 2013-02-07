@@ -17,12 +17,12 @@ missingReturn = "Return statement missing at the end of "
 
 -- Convert FNamedSimple to FNamed and "compress" statements
 cleanFunction :: Function -> Either String Function
-cleanFunction (FNamedSimple name _ (SSeq []))       = Left $ missingReturn ++ name
+cleanFunction (FNamedSimple name _ (SSeq []))       = Left $ missingReturn ++ i_val name
 cleanFunction (FNamedSimple name formals (SSeq ss)) = case last ss of
   SReturn ret -> Right $ FNamed name formals (compressStm . SSeq $ init ss) ret
-  _           -> Left  $ missingReturn ++ name
+  _           -> Left  $ missingReturn ++ i_val name
 cleanFunction (FNamedSimple name formals (SReturn expr)) = Right $ FNamed name formals SNop expr
-cleanFunction (FNamedSimple name _ _)                    = Left  $ missingReturn ++ name
+cleanFunction (FNamedSimple name _ _)                    = Left  $ missingReturn ++ i_val name
 cleanFunction (FNamed n f s r)                           = Right $ FNamed n f (compressStm s) r
 
 -- The parser emits a lot more SSeq then it should, so clean it up
