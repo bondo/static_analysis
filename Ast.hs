@@ -10,16 +10,18 @@ type GUID = Int
 data Id = Id { i_val :: String, i_uid :: GUID }
 
 data Expr = -- E
-    EConst      { e_val  :: Int, e_uid :: GUID }
+    EConst      { e_val  :: Int, e_uid' :: GUID }
   | EVar        { e_name :: Id }
-  | EBinOp      { e_op   :: BinOp, e_left :: Expr, e_right :: Expr, e_uid :: GUID }
-  | EAppNamed   { e_name :: Id,   e_args :: [Expr], e_uid :: GUID } -- id(E,...,E)
-  | EAppUnnamed { e_expr :: Expr, e_args :: [Expr], e_uid :: GUID } -- (E)(E,...,E)
-  | ERef        { e_name :: Id,   e_uid :: GUID } -- &id
-  | EDeRef      { e_expr :: Expr, e_uid :: GUID } -- *E
-  | EInput      { e_uid  :: GUID }
-  | EMalloc     { e_uid  :: GUID }
-  | ENull       { e_uid  :: GUID }
+  | EBinOp      { e_op   :: BinOp, e_left :: Expr, e_right :: Expr, e_uid' :: GUID }
+  | EAppNamed   { e_name :: Id,   e_args :: [Expr], e_uid' :: GUID } -- id(E,...,E)
+  | EAppUnnamed { e_expr :: Expr, e_args :: [Expr], e_uid' :: GUID } -- (E)(E,...,E)
+  | ERef        { e_name :: Id,   e_uid' :: GUID } -- &id
+  | EDeRef      { e_expr :: Expr, e_uid' :: GUID } -- *E
+  | EInput      { e_uid' :: GUID }
+  | EMalloc     { e_uid' :: GUID }
+  | ENull       { e_uid' :: GUID }
+e_uid (EVar n) = i_uid n
+e_uid e        = e_uid' e
 
 data BinOp = BPlus
            | BMinus
