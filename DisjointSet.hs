@@ -13,12 +13,12 @@ class Elem e where
   bestRep :: e -> e -> e
   bestRep a b = a
 
+type DisjointSet e = State [[e]]
+
 instance Show e => Show (DisjointSet e a) where
   show ds = "DisjointSet{" ++ show (map (map show) $ toList ds) ++ "}"
 
 instance Elem Int where eq = (==)
-
-type DisjointSet e = State [[e]]
 
 find :: Elem e => e -> DisjointSet e e
 find a = get >>= maybe (add a >> return a) (return . head) . L.find (any $ eq a)
