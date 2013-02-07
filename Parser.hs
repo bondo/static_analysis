@@ -50,12 +50,26 @@ P.TokenParser{ P.parens     = parens
 
 -- The parser
 
-type Parser = Parsec String GUID
+type Parser = Parsec String (GUID, [(String, GUID)])
+
+mapFst :: (a -> c) -> (a, b) -> (c, b)
+mapFst f (a, b) = (f a, b)
+
+mapSnd :: (b -> c) -> (a, b) -> (a, c)
+mapSnd f (a, b) = (a, f b)
 
 guid :: Parser GUID
-guid = do uid <- getState
-          updateState (+1)
+guid = do uid <- fst <$> getState
+          modifyState $ mapFst (+1)
           return uid
+
+variable :: Parser Expr
+variable = do id <- identifier
+              vars <- snd <$> getState
+              maybe (new id) (return . EVar id) $ lookup id vars
+  where new id = do uid <- guid
+                    modifyState $ mapSnd ((id, uid):)
+                    return $ EVar id uid
 
 parseExpr :: Parser Expr
 parseExpr = buildExpressionParser table term
@@ -71,9 +85,7 @@ parseExpr = buildExpressionParser table term
                            es <- parens $ commaSep parseExpr
                            uid <- guid
                            return $ EAppUnnamed e es uid)
-               <|> do id <- identifier
-                      uid <- guid
-                      return $ EVar id uid
+               <|> variable
                <|> parens parseExpr
                <|> (reserved "input" >> guid >>= return . EInput)
                <|> (reserved "malloc" >> guid >>= return . EMalloc)
@@ -128,4 +140,4 @@ parseProgram :: Parser Program
 parseProgram = whiteSpace >> many parseFunction <* eof
 
 parse :: String -> String -> Either ParseError Program
-parse filename contents = runParser parseProgram 1 filename contents
+parse filename contents = runParser parseProgram (1, []) filename contents
