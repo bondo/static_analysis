@@ -1,7 +1,7 @@
 module Constraints (Constraint, showConstraints, generateConstraints) where
 
 import Ast
-import Types
+import TypeVariable
 
 import Control.Monad (liftM)
 import Control.Monad.State

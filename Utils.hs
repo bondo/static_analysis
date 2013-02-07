@@ -3,6 +3,7 @@ module Utils where
 import Ast
 import Constraints
 import Parser
+import TypeVariable
 import Weeder
 
 parseAndWeedString :: String -> Either String Program
