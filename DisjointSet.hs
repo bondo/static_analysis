@@ -44,6 +44,9 @@ empty = return ()
 toList :: DisjointSet e a -> [[e]]
 toList ds = execState ds []
 
+string :: Show e => DisjointSet e String
+string = get >>= return . L.intercalate "\n" . map (L.intercalate " == " . map show)
+
 result :: DisjointSet e a -> a
 result ds = evalState ds []
 

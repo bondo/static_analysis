@@ -1,4 +1,4 @@
-module Constraints (Constraint, showConstraints, generateConstraints) where
+module Constraints (Constraint, showConstraint, showConstraints, generateConstraints) where
 
 import Ast
 import TypeVariable
@@ -16,7 +16,7 @@ showConstraints :: [Constraint] -> String
 showConstraints cs = intercalate "\n" $ map showConstraint cs
 
 generateConstraints :: Program -> [Constraint]
-generateConstraints prog = concatMap (extract . genFunction) prog
+generateConstraints prog = extract $ concatMapM genFunction prog
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f l = mapM f l >>= return . concat
