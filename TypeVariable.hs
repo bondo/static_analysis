@@ -7,14 +7,14 @@ import Data.List (intercalate)
 
 type TVID = Int
 data TypeVariable = TVInt    { tv_id :: TVID }
-                  | TVRef    { tv_expr :: Expr, tv_id :: TVID }
+                  | TVRef    { tv_inner :: TypeVariable, tv_id :: TVID }
                   | TVGenRef { tv_id :: TVID } -- &a
                   | TVFun    { tv_formals :: [TypeVariable], tv_retval :: TypeVariable, tv_id :: TVID }
                   | TVVar    { tv_expr :: Expr, tv_id :: TVID }
 
 instance Eq TypeVariable where
   (TVVar e1 _) == (TVVar e2 _) = e_uid e1 == e_uid e2
-  (TVRef e1 _) == (TVRef e2 _) = e_uid e1 == e_uid e2
+  (TVRef e1 _) == (TVRef e2 _) = e1       == e2
   a            == b            = tv_id a  == tv_id b
 
 compat :: TypeVariable -> TypeVariable -> Bool
@@ -53,7 +53,7 @@ showExprPar e            = showPar $ showExpr e
 
 instance Show TypeVariable where
   show (TVInt i)     = "int"
-  show (TVRef e i)   = "&" ++ squares (showExpr e)
+  show (TVRef t i)   = "&" ++ show t
   show (TVVar e i)   = squares $ showExpr e
   show (TVFun f r i) = "(" ++ (intercalate ", " $ map show f) ++ ")->" ++ show r
   show (TVGenRef i)  = "&a"

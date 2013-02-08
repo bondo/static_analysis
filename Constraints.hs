@@ -144,7 +144,7 @@ genVar :: Expr -> IdGen TypeVariable
 genVar = gen . TVVar
 
 genRef :: Expr -> IdGen TypeVariable
-genRef = gen . TVRef
+genRef e = genVar e >>= gen . TVRef
 
 genFun :: [TypeVariable] -> TypeVariable -> IdGen TypeVariable
 genFun formals retval = gen $ TVFun formals retval
