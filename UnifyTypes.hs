@@ -26,7 +26,7 @@ unify (ta, tb) = do
 
 unify' :: TypeVariable -> TypeVariable -> DS_TV ()
 unify' ta@(TVInt _)       tb@(TVInt _)       = union ta tb
-unify' ta@(TVRef t1 _)    tb@(TVRef t2 _)    = union ta tb >> union t1 t2
+unify' ta@(TVRef t1 _)    tb@(TVRef t2 _)    = union ta tb >> unify (t1, t2)
 unify' ta@(TVGenRef _)    tb@(TVRef _ _)     = union ta tb
 unify' ta@(TVRef _ _)     tb@(TVGenRef _)    = union ta tb
 unify' ta@(TVGenRef _)    tb@(TVGenRef _)    = union ta tb
