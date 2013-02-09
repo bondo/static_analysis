@@ -3,15 +3,12 @@ module Weeder (weed) where
 import Ast
 
 import Control.Monad.Instances -- Instance for (Monad (Either String))
-
-{-
-  TODO:
-    * make sure no SReturn exists
-    * make sure identifiers are unique
--}
+import Data.Maybe (catMaybes, listToMaybe)
 
 weed :: Program -> Either String Program
-weed = sequence . map cleanFunction
+weed = mapM $ \f -> do
+  f' <- cleanFunction f
+  maybe (Right f') Left $ checkReturn f'
 
 missingReturn = "Return statement missing at the end of "
 
@@ -33,3 +30,17 @@ compressStm (SSeq ss)         = SSeq $ map compressStm ss
 compressStm (SIfElse e s1 s2) = SIfElse e (compressStm s1) (compressStm s2)
 compressStm (SWhile e s)      = SWhile e $ compressStm s
 compressStm s                 = s
+
+
+-- Check to make sure no more SReturn statements exists
+checkReturn :: Function -> Maybe String
+checkReturn f = annotate . checkReturn' $ f_body f
+  where annotate (Just msg) = Just $ "Error in " ++ i_val (f_name f) ++ ": " ++ msg
+        annotate Nothing    = Nothing
+
+checkReturn' :: Stm -> Maybe String
+checkReturn' s@(SSeq ss)       = listToMaybe $ catMaybes $ map checkReturn' ss
+checkReturn' s@(SIfElse _ t e) = checkReturn' t >> checkReturn' e
+checkReturn' s@(SWhile _ b)    = checkReturn' b
+checkReturn' (SReturn _)       = Just "Return statements are only allowed as the last statement in a function"
+checkReturn' s                 = Nothing
