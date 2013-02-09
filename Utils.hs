@@ -18,7 +18,7 @@ parseAndWeedFile fname = parseFile fname >>= return . either (Left . show) weed
 
 printEither :: Either String Program -> IO ()
 printEither esp = case esp of
-  Left e -> error e
+  Left e -> putStrLn $ "Failed: " ++ e
   Right p -> putStrLn $ showProgram p
 
 printParsedString :: String -> IO ()
