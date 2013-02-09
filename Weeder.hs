@@ -3,6 +3,7 @@ module Weeder (weed) where
 import Ast
 
 import Control.Monad.Instances -- Instance for (Monad (Either String))
+import Data.Generics.Aliases (orElse)
 import Data.Maybe (catMaybes, listToMaybe)
 
 weed :: Program -> Either String Program
@@ -40,7 +41,7 @@ checkReturn f = annotate . checkReturn' $ f_body f
 
 checkReturn' :: Stm -> Maybe String
 checkReturn' s@(SSeq ss)       = listToMaybe $ catMaybes $ map checkReturn' ss
-checkReturn' s@(SIfElse _ t e) = checkReturn' t >> checkReturn' e
+checkReturn' s@(SIfElse _ t e) = checkReturn' t `orElse` checkReturn' e
 checkReturn' s@(SWhile _ b)    = checkReturn' b
 checkReturn' (SReturn _)       = Just "Return statements are only allowed as the last statement in a function"
 checkReturn' s                 = Nothing
