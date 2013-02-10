@@ -5,39 +5,46 @@ import DisjointSet
 import TypeVariable
 
 import Control.Monad (zipWithM_)
+import qualified Data.Set as Set
 import Data.List (intercalate)
 
---import Debug.Trace
---traceConstraint a b = trace ("[> " ++ cont a ++ " ==> " ++ cont b ++ " <]") (return ())
---  where cont a = show a ++ "{" ++ show (tv_id a) ++ "}"
-
 type DS_TV = DisjointSet TypeVariable
+type Set = Set.Set (Int, Int)
 
 unifyAll :: [Constraint] -> DS_TV ()
 unifyAll = mapM_ unify
 
 unify :: Constraint -> DS_TV ()
-unify (ta, tb) = do
+unify (ta, tb) = findAndUnify Set.empty ta tb
+
+findAndUnify :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
+findAndUnify s ta tb = do
   ta' <- find ta
---  traceConstraint ta ta'
   tb' <- find tb
---  traceConstraint tb tb'
-  unify' ta' tb'
+  let ids = (tv_id ta, tv_id tb)
+  if Set.member ids s
+    then infiniteRecursion ta tb
+    else unify' (Set.insert ids s) ta' tb'
 
-unify' :: TypeVariable -> TypeVariable -> DS_TV ()
-unify' ta@(TVInt _)       tb@(TVInt _)       = union ta tb
-unify' ta@(TVRef t1 _)    tb@(TVRef t2 _)    = union ta tb >> unify (t1, t2)
-unify' ta@(TVGenRef _)    tb@(TVRef _ _)     = union ta tb
-unify' ta@(TVRef _ _)     tb@(TVGenRef _)    = union ta tb
-unify' ta@(TVGenRef _)    tb@(TVGenRef _)    = union ta tb
-unify' ta@(TVFun fa ra _) tb@(TVFun fb rb _) = union ta tb >> unifyIfEqual ra rb >> zipWithM_ unifyIfEqual fa fb
-unify' ta@(TVVar _ _)     tb                 = union ta tb
-unify' ta                 tb@(TVVar _ _)     = union ta tb
-unify' ta                 tb                 = failedUnification ta tb
+unify' :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
+unify' s ta@(TVInt _)       tb@(TVInt _)       = union ta tb
+unify' s ta@(TVRef t1 _)    tb@(TVRef t2 _)    = union ta tb >> unifyIfEqual s t1 t2
+unify' s ta@(TVGenRef _)    tb@(TVRef _ _)     = union ta tb
+unify' s ta@(TVRef _ _)     tb@(TVGenRef _)    = union ta tb
+unify' s ta@(TVGenRef _)    tb@(TVGenRef _)    = union ta tb
+unify' s ta@(TVFun fa ra _) tb@(TVFun fb rb _) =
+  union ta tb >> unifyIfEqual s ra rb >> zipWithM_ (unifyIfEqual s) fa fb
+unify' s ta@(TVVar _ _)     tb                 = union ta tb
+unify' s ta                 tb@(TVVar _ _)     = union ta tb
+unify' s ta                 tb                 = failedUnification ta tb
 
-unifyIfEqual :: TypeVariable -> TypeVariable -> DS_TV ()
-unifyIfEqual ta tb | ta `compat` tb  = unify (ta, tb)
-                   | otherwise       = failedUnification ta tb
+unifyIfEqual :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
+unifyIfEqual s ta tb | ta `compat` tb  = findAndUnify s ta tb
+                     | otherwise       = failedUnification ta tb
 
 failedUnification :: TypeVariable -> TypeVariable -> a
-failedUnification ta tb = error $ "Unable to unify " ++ show ta ++ " with " ++ show tb
+failedUnification ta tb = error $ "Unable to unify [" ++ show ta ++ "] with [" ++ show tb ++ "]."
+
+infiniteRecursion :: TypeVariable -> TypeVariable -> a
+infiniteRecursion ta tb = error $ "It looks like the constraint " ++
+  show ta ++ " == " ++ show tb ++ " makes the type inference recurse infinitely."
