@@ -1,4 +1,4 @@
-module Constraints (Constraint, showConstraint, showConstraints, generateConstraints) where
+module Constraints (Constraint, showConstraint, showConstraints, generateConstraints, intIdConst) where
 
 import Ast
 import TypeVariable
@@ -135,7 +135,7 @@ gen c = do id <- get
            return $ c id
 
 genInt :: IdGen TypeVariable
-genInt = return $ TVInt 1
+genInt = return $ TVInt intIdConst
 
 genGenRef :: IdGen TypeVariable
 genGenRef = gen TVGenRef
@@ -148,6 +148,9 @@ genRef e = genVar e >>= gen . TVRef
 
 genFun :: [TypeVariable] -> TypeVariable -> IdGen TypeVariable
 genFun formals retval = gen $ TVFun formals retval
+
+intIdConst :: Int
+intIdConst = 1
 
 extract :: IdGen a -> a
 extract ig = evalState ig 2

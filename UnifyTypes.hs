@@ -21,8 +21,10 @@ findAndUnify :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
 findAndUnify s ta tb = do
   ta' <- find ta
   tb' <- find tb
-  let ids = (tv_id ta, tv_id tb)
-  if Set.member ids s
+  let ida = tv_id ta
+      idb = tv_id tb
+      ids = (ida, idb)
+  if ida /= intIdConst && idb /= intIdConst && Set.member ids s
     then infiniteRecursion ta tb
     else unify' (Set.insert ids s) ta' tb'
 
