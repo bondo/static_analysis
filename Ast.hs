@@ -89,7 +89,8 @@ instance Show Id where
   show i = i_val i ++ (showUid $ i_uid i)
 
 instance Eq Expr where
-  a == b = e_uid a == e_uid b
+  (EDeRef e1 _) == (EDeRef e2 _) = e1 == e2
+  a             == b             = e_uid a == e_uid b
 
 instance Show Expr where
   show (EConst v u)           = show v                                                         ++ showUid u

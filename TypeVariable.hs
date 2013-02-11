@@ -13,9 +13,10 @@ data TypeVariable = TVInt    { tv_id :: TVID }
                   | TVVar    { tv_expr :: Expr, tv_id :: TVID }
 
 instance Eq TypeVariable where
-  (TVVar e1 _) == (TVVar e2 _) = e_uid e1 == e_uid e2
-  (TVRef e1 _) == (TVRef e2 _) = e1       == e2
-  a            == b            = tv_id a  == tv_id b
+  (TVVar e1 _)    == (TVVar e2 _)    = e1 == e2
+  (TVRef e1 _)    == (TVRef e2 _)    = e1 == e2
+  (TVFun f1 r1 _) == (TVFun f2 r2 _) = f1 == f2 && r1 == r2
+  a               == b               = tv_id a == tv_id b
 
 compat :: TypeVariable -> TypeVariable -> Bool
 TVInt _       `compat` TVInt _       = True

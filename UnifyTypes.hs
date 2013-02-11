@@ -25,7 +25,7 @@ findAndUnify s ta tb = do
       idb = tv_id tb
       ids = (ida, idb)
   if ida /= intIdConst && idb /= intIdConst && Set.member ids s
-    then infiniteRecursion ta tb
+    then return ()
     else unify' (Set.insert ids s) ta' tb'
 
 unify' :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
@@ -46,7 +46,3 @@ unifyIfEqual s ta tb | ta `compat` tb  = findAndUnify s ta tb
 
 failedUnification :: TypeVariable -> TypeVariable -> a
 failedUnification ta tb = error $ "Unable to unify [" ++ show ta ++ "] with [" ++ show tb ++ "]."
-
-infiniteRecursion :: TypeVariable -> TypeVariable -> a
-infiniteRecursion ta tb = error $ "It looks like the constraint " ++
-  show ta ++ " == " ++ show tb ++ " makes the type inference recurse infinitely."
