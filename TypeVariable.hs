@@ -38,8 +38,8 @@ showExpr (EVar n)               = i_val n
 showExpr (EBinOp op l r u)      = showExpr l ++ " " ++ show op ++ " " ++ showExpr r
 showExpr (EAppNamed n args u)   = i_val n ++ showPar (intercalate ", " $ map showExpr args)
 showExpr (EAppUnnamed e args u) = showPar (showExpr e) ++ showPar (intercalate ", " $ map showExpr args)
-showExpr (ERef n u)             = "&" ++ i_val n
-showExpr (EDeRef e u)           = "*" ++ showExprPar e
+showExpr (ERef n u)             = '&' : i_val n
+showExpr (EDeRef e u)           = '*' : showExprPar e
 showExpr (EInput u)             = "input"
 showExpr (EMalloc u)            = "malloc"
 showExpr (ENull u)              = "null"
@@ -54,9 +54,9 @@ showExprPar e            = showPar $ showExpr e
 
 instance Show TypeVariable where
   show (TVInt i)     = "int"
-  show (TVRef t i)   = "&" ++ show t
+  show (TVRef t i)   = '&' : show t
   show (TVVar e i)   = squares $ showExpr e
-  show (TVFun f r i) = "(" ++ (intercalate ", " $ map show f) ++ ")->" ++ show r
+  show (TVFun f r i) = "(" ++ intercalate ", " (map show f) ++ ")->" ++ show r
   show (TVGenRef i)  = "&a"
 
 instance Elem TypeVariable where

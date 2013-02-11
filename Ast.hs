@@ -86,7 +86,7 @@ doc (SNop)          = text "nop" <> char ';'
 -- Instances
 
 instance Show Id where
-  show i = i_val i ++ (showUid $ i_uid i)
+  show i = i_val i ++ showUid (i_uid i)
 
 instance Eq Expr where
   (EDeRef e1 _) == (EDeRef e2 _) = e1 == e2

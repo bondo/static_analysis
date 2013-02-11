@@ -19,7 +19,7 @@ generateConstraints :: Program -> [Constraint]
 generateConstraints prog = extract $ concatMapM genFunction prog
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
-concatMapM f l = mapM f l >>= return . concat
+concatMapM f l = concat `liftM` mapM f l
 
 genFunction :: Function -> IdGen [Constraint]
 genFunction (FNamedSimple name _ _) =
@@ -64,7 +64,7 @@ genStm (SWhile cond body) = do
   c_cond  <- genExpr cond
   return $ (c_left, c_right) : c_cond ++ c_body
 genStm (SDecl _) = return []
-genStm (SReturn val) = error $ "Return statemente are only allowed as the last thing in a function."
+genStm (SReturn val) = error "Return statemente are only allowed as the last thing in a function."
 genStm SNop = return []
 
 genExpr :: Expr -> IdGen [Constraint]
@@ -73,37 +73,10 @@ genExpr e@(EConst _ _) = do
   c_i <- genInt
   return [(c_e, c_i)]
 genExpr (EVar _) = return []
-genExpr e@(EBinOp BEq left right _) = do
-  c_left     <- genVar left
-  c_right    <- genVar right
-  c_op       <- genVar e
-  c_int      <- genInt
-  c_leftRec  <- genExpr left
-  c_rightRec <- genExpr right
-  return $ [(c_left, c_right), (c_op, c_int)] ++ c_leftRec ++ c_rightRec
-genExpr e@(EBinOp op left right _) = do
-  c_left     <- genVar left
-  c_right    <- genVar right
-  c_op       <- genVar e
-  c_int      <- genInt
-  c_leftRec  <- genExpr left
-  c_rightRec <- genExpr right
-  return $ [(c_left, c_int), (c_right, c_int), (c_op, c_int)] ++ c_leftRec ++ c_rightRec
-genExpr e@(EAppNamed name args _) = do
-  c_left    <- genVar $ EVar name
-  c_formals <- mapM genVar args
-  c_retval  <- genVar e
-  c_right   <- genFun c_formals c_retval
-  c_args    <- concat `liftM` mapM genExpr args
-  return $ (c_left, c_right) : c_args
-genExpr e@(EAppUnnamed expr args _) = do
-  c_left    <- genVar expr
-  c_formals <- mapM genVar args
-  c_retval  <- genVar e
-  c_right   <- genFun c_formals c_retval
-  c_args    <- concat `liftM` mapM genExpr args
-  c_expr    <- genExpr expr
-  return $ (c_left, c_right) : c_expr ++ c_args
+genExpr e@(EBinOp BEq _ _ _) = genOpCont e True
+genExpr e@(EBinOp{}) = genOpCont e False
+genExpr e@(EAppNamed name args _) = genFunCont e (EVar name) args
+genExpr e@(EAppUnnamed expr args _) = genFunCont e expr args
 genExpr e@(ERef name _) = do
   c_e    <- genVar e
   c_name <- genRef $ EVar name
@@ -117,14 +90,8 @@ genExpr e@(EInput _) = do
   c_e   <- genVar e
   c_int <- genInt
   return [(c_e, c_int)]
-genExpr e@(EMalloc _) = do
-  c_e      <- genVar e
-  c_genRef <- genGenRef
-  return [(c_e, c_genRef)]
-genExpr e@(ENull _) = do
-  c_e      <- genVar e
-  c_genRef <- genGenRef
-  return [(c_e, c_genRef)]
+genExpr e@(EMalloc _) = genGenRefCont e
+genExpr e@(ENull _) = genGenRefCont e
 
 
 type IdGen = State TVID
@@ -148,6 +115,36 @@ genRef e = genVar e >>= gen . TVRef
 
 genFun :: [TypeVariable] -> TypeVariable -> IdGen TypeVariable
 genFun formals retval = gen $ TVFun formals retval
+
+genOpCont :: Expr -> Bool -> IdGen [Constraint]
+genOpCont e isEq = do
+  let left  = e_left e
+      right = e_right e
+  c_left     <- genVar left
+  c_right    <- genVar right
+  c_op       <- genVar e
+  c_int      <- genInt
+  c_leftRec  <- genExpr left
+  c_rightRec <- genExpr right
+  if isEq
+    then return $ [(c_left, c_right), (c_op, c_int)] ++ c_leftRec ++ c_rightRec
+    else return $ [(c_left, c_int), (c_right, c_int), (c_op, c_int)] ++ c_leftRec ++ c_rightRec
+
+genFunCont :: Expr -> Expr-> [Expr] -> IdGen [Constraint]
+genFunCont e name args = do
+  c_left    <- genVar name
+  c_formals <- mapM genVar args
+  c_retval  <- genVar e
+  c_right   <- genFun c_formals c_retval
+  c_args    <- concat `liftM` mapM genExpr args
+  c_expr    <- genExpr name
+  return $ (c_left, c_right) : c_expr ++ c_args
+
+genGenRefCont :: Expr -> IdGen [Constraint]
+genGenRefCont e = do
+  c_e      <- genVar e
+  c_genRef <- genGenRef
+  return [(c_e, c_genRef)]
 
 intIdConst :: Int
 intIdConst = 1

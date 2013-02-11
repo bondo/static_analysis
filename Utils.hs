@@ -7,13 +7,14 @@ import Parser (parseString, parseFile)
 import UnifyTypes (unify, unifyAll, DS_TV)
 import Weeder (weed)
 
+import Control.Monad (liftM)
 import Data.List (intercalate, intersperse)
 
 parseAndWeedString :: String -> Either String Program
 parseAndWeedString = either (Left . show) weed . parseString
 
 parseAndWeedFile :: String -> IO (Either String Program)
-parseAndWeedFile fname = parseFile fname >>= return . either (Left . show) weed
+parseAndWeedFile fname = either (Left . show) weed `liftM` parseFile fname
 
 printEither :: Either String Program -> IO ()
 printEither esp = case esp of
@@ -33,15 +34,15 @@ getProgramFromString :: String -> Program
 getProgramFromString str =  getRight $ parseAndWeedString str
 
 getProgramFromFile :: String -> IO Program
-getProgramFromFile fname = parseAndWeedFile fname >>= return . getRight
+getProgramFromFile fname = getRight `liftM` parseAndWeedFile fname
 
 getConstraingsFromFile :: String -> IO [Constraint]
-getConstraingsFromFile fname = getProgramFromFile fname >>= return . generateConstraints
+getConstraingsFromFile fname = generateConstraints `liftM` getProgramFromFile fname
 
 printConstraintsFromString :: String -> IO ()
 printConstraintsFromString str = do
   let program = getProgramFromString str
-  putStrLn $ concat (map ((++"\n\n") . show) program)
+  putStrLn $ concatMap ((++"\n\n") . show) program
   putStrLn . showConstraints . generateConstraints $ program
 
 printConstraintsFromFile :: String -> IO ()
@@ -58,5 +59,5 @@ verboseUnifyFromFile fname = do cs <- getConstraingsFromFile fname
   where unifyAllVerbose :: [Constraint] -> DS_TV [String]
         unifyAllVerbose = mapM unifyVerbose
         unifyVerbose :: Constraint -> DS_TV String
-        unifyVerbose c = unify c >> string >>= return . (cont c ++)
+        unifyVerbose c = (cont c ++) `liftM` (unify c >> string)
         cont c = "Constraint: " ++ showConstraint c ++ "\n"

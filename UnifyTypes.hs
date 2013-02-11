@@ -4,7 +4,7 @@ import Constraints (Constraint, intIdConst)
 import DisjointSet (union, find, DisjointSet)
 import TypeVariable (TypeVariable(..), compat)
 
-import Control.Monad (zipWithM_)
+import Control.Monad (zipWithM_, unless)
 import qualified Data.Set as Set
 import Data.List (intercalate)
 
@@ -24,20 +24,19 @@ findAndUnify s ta tb = do
   let ida = tv_id ta
       idb = tv_id tb
       ids = (ida, idb)
-  if ida /= intIdConst && idb /= intIdConst && Set.member ids s
-    then return ()
-    else unify' (Set.insert ids s) ta' tb'
+  unless (ida /= intIdConst && idb /= intIdConst && Set.member ids s) $
+    unify' (Set.insert ids s) ta' tb'
 
 unify' :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
-unify' s ta@(TVInt _)       tb@(TVInt _)       = union ta tb
-unify' s ta@(TVRef t1 _)    tb@(TVRef t2 _)    = union ta tb >> unifyIfEqual s t1 t2
-unify' s ta@(TVGenRef _)    tb@(TVRef _ _)     = union ta tb
-unify' s ta@(TVRef _ _)     tb@(TVGenRef _)    = union ta tb
-unify' s ta@(TVGenRef _)    tb@(TVGenRef _)    = union ta tb
+unify' s ta@(TVInt _)       tb@(TVInt _)       = ta `union` tb
+unify' s ta@(TVRef t1 _)    tb@(TVRef t2 _)    = ta `union` tb >> unifyIfEqual s t1 t2
+unify' s ta@(TVGenRef _)    tb@(TVRef _ _)     = ta `union` tb
+unify' s ta@(TVRef _ _)     tb@(TVGenRef _)    = ta `union` tb
+unify' s ta@(TVGenRef _)    tb@(TVGenRef _)    = ta `union` tb
 unify' s ta@(TVFun fa ra _) tb@(TVFun fb rb _) =
   union ta tb >> unifyIfEqual s ra rb >> zipWithM_ (unifyIfEqual s) fa fb
-unify' s ta@(TVVar _ _)     tb                 = union ta tb
-unify' s ta                 tb@(TVVar _ _)     = union ta tb
+unify' s ta@(TVVar _ _)     tb                 = ta `union` tb
+unify' s ta                 tb@(TVVar _ _)     = ta `union` tb
 unify' s ta                 tb                 = failedUnification ta tb
 
 unifyIfEqual :: Set -> TypeVariable -> TypeVariable -> DS_TV ()

@@ -17,13 +17,13 @@ showFun dom cod = intercalate " -> " (map showFunParens dom) ++ " -> " ++ show c
 instance Eq Type where
   TInt        == TInt         = True
   TRef t1     == TRef t2      = t1 == t2
-  TFun d1 c1  == TFun d2 c2   = c1 == c2 && (all id $ zipWith (==) d1 d2)
+  TFun d1 c1  == TFun d2 c2   = c1 == c2 && all id (zipWith (==) d1 d2)
   TGen        == _            = True
   _           == TGen         = True
   _           == _            = False
 
 instance Show Type where
   show TInt           = "Int"
-  show (TRef t)       = "&" ++ show t
+  show (TRef t)       = '&' : show t
   show (TFun dom cod) = showFun dom cod
   show TGen           = "a"

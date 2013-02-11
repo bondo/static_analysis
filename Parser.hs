@@ -3,6 +3,7 @@ module Parser (parseFile, parseString) where
 import Ast (Program, Function(..), Stm(..), Expr(..), BinOp(..), Id(..), GUID)
 
 import Control.Applicative ((<*), (<$>))
+import Control.Monad (liftM)
 import Text.Parsec hiding (parse)
 import Text.Parsec.Expr
 import qualified Text.Parsec.Token as P
@@ -12,7 +13,7 @@ import Text.Parsec.Language (emptyDef)
 -- Exported functions
 
 parseFile :: String -> IO (Either ParseError Program)
-parseFile name = readFile name >>= return . parse name
+parseFile name = parse name `liftM` readFile name
 
 parseString :: String -> Either ParseError Program
 parseString = parse "<insert filename here>"
@@ -85,11 +86,11 @@ parseExpr = buildExpressionParser table term
                            es <- parens $ commaSep parseExpr
                            uid <- guid
                            return $ EAppUnnamed e es uid)
-               <|> (ident >>= return . EVar)
+               <|> EVar `liftM` ident
                <|> parens parseExpr
-               <|> (reserved "input" >> guid >>= return . EInput)
-               <|> (reserved "malloc" >> guid >>= return . EMalloc)
-               <|> (reserved "null" >> guid >>= return . ENull)
+               <|> EInput `liftM` (reserved "input" >> guid)
+               <|> EMalloc `liftM` (reserved "malloc" >> guid)
+               <|> ENull `liftM` (reserved "null" >> guid)
                <|> do reservedOp "&"
                       id <- ident
                       uid <- guid
@@ -100,26 +101,17 @@ parseExpr = buildExpressionParser table term
                 , [inleft "+" (EBinOp BPlus), inleft "-" (EBinOp BMinus)]
                 , [inleft ">" (EBinOp BGt), inleft "==" (EBinOp BEq)]
                 ]
-          where inleft op ast = Infix (reservedOp op >> guid >>= return . flip2 ast) AssocLeft
-                pre op ast = Prefix (reservedOp op >> guid >>= return . flip ast)
+          where inleft op ast = Infix (flip2 ast `liftM` (reservedOp op >> guid)) AssocLeft
+                pre op ast = Prefix (flip ast `liftM` (reservedOp op >> guid))
                 flip2 f c a b = f a b c
 
 parseStm :: Parser Stm
-parseStm = SSeq <$> (many1 stm1)
+parseStm = SSeq <$> many1 stm1
   where stm1 = (reserved "output" >> SOutput <$> parseExpr <* semi)
                <|> (reserved "var" >> SDecl <$> commaSep1 ident <* semi)
                <|> (reserved "return" >> SReturn <$> parseExpr <* semi)
-               <|> do v <- ident
-                      reservedOp "="
-                      e <- parseExpr
-                      semi
-                      return $ SAss v e
-               <|> do reservedOp "*"
-                      v <- ident
-                      reservedOp "="
-                      e <- parseExpr
-                      semi
-                      return $ SAssRef v e
+               <|> parseAss SAss
+               <|> (reservedOp "*" >> parseAss SAssRef)
                <|> do reserved "if"
                       e <- parens parseExpr
                       sif <- braces parseStm
@@ -131,13 +123,20 @@ parseStm = SSeq <$> (many1 stm1)
                       return $ SWhile e s
                <?> "statement"
 
+parseAss :: (Id -> Expr -> Stm) -> Parser Stm
+parseAss ass = do v <- ident
+                  reservedOp "="
+                  e <- parseExpr
+                  semi
+                  return $ ass v e
+
 parseFunction :: Parser Function
 parseFunction = do name <- ident
                    arguments <- parens $ commaSep ident
-                   braces $ (FNamedSimple name arguments) <$> parseStm
+                   braces $ FNamedSimple name arguments <$> parseStm
 
 parseProgram :: Parser Program
 parseProgram = whiteSpace >> many parseFunction <* eof
 
 parse :: String -> String -> Either ParseError Program
-parse filename contents = runParser parseProgram (1, []) filename contents
+parse = runParser parseProgram (1, [])
