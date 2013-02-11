@@ -1,7 +1,7 @@
 module Constraints (Constraint, showConstraint, showConstraints, generateConstraints, intIdConst) where
 
-import Ast
-import TypeVariable
+import Ast (Expr(..), Stm(..), Program, Function(..), BinOp(..), i_val)
+import TypeVariable (TypeVariable(..), TVID)
 
 import Control.Monad (liftM)
 import Control.Monad.State

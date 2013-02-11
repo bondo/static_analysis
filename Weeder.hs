@@ -1,6 +1,6 @@
 module Weeder (weed) where
 
-import Ast
+import Ast (Program, Function(..), Stm(..), i_val)
 
 import Control.Monad.Instances -- Instance for (Monad (Either String))
 import Data.Generics.Aliases (orElse)

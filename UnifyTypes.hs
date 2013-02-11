@@ -1,8 +1,8 @@
 module UnifyTypes (DS_TV, unify, unifyAll) where
 
-import Constraints
-import DisjointSet
-import TypeVariable
+import Constraints (Constraint, intIdConst)
+import DisjointSet (union, find, DisjointSet)
+import TypeVariable (TypeVariable(..), compat)
 
 import Control.Monad (zipWithM_)
 import qualified Data.Set as Set

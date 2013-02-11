@@ -1,12 +1,11 @@
 module Utils where
 
-import Ast
-import Constraints
-import DisjointSet
-import Parser
-import TypeVariable
-import UnifyTypes
-import Weeder
+import Ast (Program, showProgram)
+import Constraints (Constraint, showConstraint, showConstraints, generateConstraints)
+import DisjointSet (string, result)
+import Parser (parseString, parseFile)
+import UnifyTypes (unify, unifyAll, DS_TV)
+import Weeder (weed)
 
 import Data.List (intercalate, intersperse)
 

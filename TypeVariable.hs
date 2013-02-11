@@ -1,7 +1,7 @@
 module TypeVariable where
 
-import Ast
-import DisjointSet
+import Ast (Expr(..), i_val, showPar)
+import DisjointSet (Elem(..))
 
 import Data.List (intercalate)
 

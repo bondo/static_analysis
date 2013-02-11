@@ -1,6 +1,6 @@
 module Parser (parseFile, parseString) where
 
-import Ast
+import Ast (Program, Function(..), Stm(..), Expr(..), BinOp(..), Id(..), GUID)
 
 import Control.Applicative ((<*), (<$>))
 import Text.Parsec hiding (parse)
