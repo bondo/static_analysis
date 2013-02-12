@@ -1,6 +1,6 @@
 module UnifyTypes (DS_TV, unify, unifyAll) where
 
-import Constraints (Constraint, intIdConst)
+import Constraints (Constraint)
 import DisjointSet (union, find, DisjointSet)
 import TypeVariable (TypeVariable(..), compat)
 
@@ -21,11 +21,8 @@ findAndUnify :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
 findAndUnify s ta tb = do
   ta' <- find ta
   tb' <- find tb
-  let ida = tv_id ta
-      idb = tv_id tb
-      ids = (ida, idb)
-  unless (ida /= intIdConst && idb /= intIdConst && Set.member ids s) $
-    unify' (Set.insert ids s) ta' tb'
+  unless (Set.member ids s) $ unify' (Set.insert ids s) ta' tb'
+  where ids = (tv_id ta, tv_id tb)
 
 unify' :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
 unify' s ta@(TVInt _)       tb@(TVInt _)       = ta `union` tb
@@ -40,8 +37,8 @@ unify' s ta                 tb@(TVVar _ _)     = ta `union` tb
 unify' s ta                 tb                 = failedUnification ta tb
 
 unifyIfEqual :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
-unifyIfEqual s ta tb | ta `compat` tb  = findAndUnify s ta tb
-                     | otherwise       = failedUnification ta tb
+unifyIfEqual s ta tb | ta `compat` tb = findAndUnify s ta tb
+                     | otherwise      = failedUnification ta tb
 
 failedUnification :: TypeVariable -> TypeVariable -> a
 failedUnification ta tb = error $ "Unable to unify [" ++ show ta ++ "] with [" ++ show tb ++ "]."

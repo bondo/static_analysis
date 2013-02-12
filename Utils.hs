@@ -17,9 +17,7 @@ parseAndWeedFile :: String -> IO (Either String Program)
 parseAndWeedFile fname = either (Left . show) weed `liftM` parseFile fname
 
 printEither :: Either String Program -> IO ()
-printEither esp = case esp of
-  Left e -> putStrLn $ "Failed: " ++ e
-  Right p -> putStrLn $ showProgram p
+printEither = putStrLn . either ("Failed: " ++) showProgram
 
 printParsedString :: String -> IO ()
 printParsedString = printEither . parseAndWeedString
@@ -49,9 +47,7 @@ printConstraintsFromFile :: String -> IO ()
 printConstraintsFromFile fname = readFile fname >>= printConstraintsFromString
 
 printUnifyFromFile :: String -> IO ()
-printUnifyFromFile fname = do
-  constraints <- getConstraingsFromFile fname
-  putStrLn . result $ unifyAll constraints >> string
+printUnifyFromFile fname = getConstraingsFromFile fname >>= print . unifyAll
 
 verboseUnifyFromFile :: String -> IO ()
 verboseUnifyFromFile fname = do cs <- getConstraingsFromFile fname

@@ -14,13 +14,13 @@ class Elem e where
 type DisjointSet e = State [[e]]
 
 instance Show e => Show (DisjointSet e a) where
-  show ds = "DisjointSet{" ++ show (map (map show) $ toList ds) ++ "}"
+  show ds = result $ ds >> string
 
 find :: (Elem e, Eq e) => e -> DisjointSet e e
-find a = get >>= maybe (add a >> return a) (return . head) . L.find (elem a)
+find a = findPure a >>= maybe (add a >> return a) return
 
 findPure :: (Elem e, Eq e) => e -> DisjointSet e (Maybe e)
-findPure a = get >>= maybe (return Nothing) (return . Just . head) . L.find (elem a)
+findPure a = (maybe Nothing (Just . head) . L.find (elem a)) `liftM` get
 
 contains :: (Elem e, Eq e) => e -> DisjointSet e Bool
 contains a = any (elem a) `liftM` get

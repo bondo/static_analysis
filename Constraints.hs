@@ -1,6 +1,6 @@
-module Constraints (Constraint, showConstraint, showConstraints, generateConstraints, intIdConst) where
+module Constraints (Constraint, showConstraint, showConstraints, generateConstraints) where
 
-import Ast (Expr(..), Stm(..), Program, Function(..), BinOp(..), i_val)
+import Ast (Expr(..), Stm(..), Program, Function(..), BinOp(..), Id, i_val)
 import TypeVariable (TypeVariable(..), TVID)
 
 import Control.Monad (liftM)
@@ -8,6 +8,8 @@ import Control.Monad.State
 import Data.List (intercalate)
 
 type Constraint = (TypeVariable, TypeVariable)
+type IdGen = State TVID
+
 
 showConstraint :: Constraint -> String
 showConstraint (a, b) = show a ++ "  =  " ++ show b
@@ -34,22 +36,17 @@ genFunction (FNamed name formals body retval) = do
   return ((c_left, c_right) : c_body ++ c_retRec)
 
 genStm :: Stm -> IdGen [Constraint]
-genStm (SAss name val) = do
-  c_left  <- genVar $ EVar name
-  c_right <- genVar val
-  c_val   <- genExpr val
-  return $ (c_left, c_right) : c_val
-genStm (SAssRef name val) = do
-  c_left  <- genVar $ EVar name
-  c_right <- genRef val
-  c_val   <- genExpr val
-  return $ (c_left, c_right) : c_val
+genStm (SAss name val)    = genAssCont name val genVar
+genStm (SAssRef name val) = genAssCont name val genRef
+genStm (SSeq ss)          = concatMapM genStm ss
+genStm (SDecl _)          = return []
+genStm (SReturn val)      = error "Return statemente are only allowed as the last thing in a function."
+genStm SNop               = return []
 genStm (SOutput val) = do
   c_left  <- genVar val
   c_right <- genInt
   c_val   <- genExpr val
   return $ (c_left, c_right) : c_val
-genStm (SSeq ss) = concatMapM genStm ss
 genStm (SIfElse cond s1 s2) = do
   c_left  <- genVar cond
   c_right <- genInt
@@ -63,20 +60,17 @@ genStm (SWhile cond body) = do
   c_body  <- genStm body
   c_cond  <- genExpr cond
   return $ (c_left, c_right) : c_cond ++ c_body
-genStm (SDecl _) = return []
-genStm (SReturn val) = error "Return statemente are only allowed as the last thing in a function."
-genStm SNop = return []
 
 genExpr :: Expr -> IdGen [Constraint]
-genExpr e@(EConst _ _) = do
-  c_e <- genVar e
-  c_i <- genInt
-  return [(c_e, c_i)]
-genExpr (EVar _) = return []
-genExpr e@(EBinOp BEq _ _ _) = genOpCont e True
-genExpr e@(EBinOp{}) = genOpCont e False
-genExpr e@(EAppNamed name args _) = genFunCont e (EVar name) args
+genExpr e@(EConst _ _)              = genVarIntCont e
+genExpr (EVar _)                    = return []
+genExpr e@(EBinOp BEq _ _ _)        = genOpCont e True
+genExpr e@(EBinOp{})                = genOpCont e False
+genExpr e@(EAppNamed name args _)   = genFunCont e (EVar name) args
 genExpr e@(EAppUnnamed expr args _) = genFunCont e expr args
+genExpr e@(EInput _)                = genVarIntCont e
+genExpr e@(EMalloc _)               = genGenRefCont e
+genExpr e@(ENull _)                 = genGenRefCont e
 genExpr e@(ERef name _) = do
   c_e    <- genVar e
   c_name <- genRef $ EVar name
@@ -86,15 +80,7 @@ genExpr e@(EDeRef expr _) = do
   c_e    <- genRef e
   c_rec  <- genExpr expr
   return $ (c_expr, c_e) : c_rec
-genExpr e@(EInput _) = do
-  c_e   <- genVar e
-  c_int <- genInt
-  return [(c_e, c_int)]
-genExpr e@(EMalloc _) = genGenRefCont e
-genExpr e@(ENull _) = genGenRefCont e
 
-
-type IdGen = State TVID
 
 gen :: (TVID -> TypeVariable) -> IdGen TypeVariable
 gen c = do id <- get
@@ -145,6 +131,19 @@ genGenRefCont e = do
   c_e      <- genVar e
   c_genRef <- genGenRef
   return [(c_e, c_genRef)]
+
+genVarIntCont :: Expr -> IdGen [Constraint]
+genVarIntCont e = do
+  c_e <- genVar e
+  c_i <- genInt
+  return [(c_e, c_i)]
+
+genAssCont :: Id -> Expr -> (Expr -> IdGen TypeVariable) -> IdGen [Constraint]
+genAssCont name val wrap = do
+  c_left  <- genVar $ EVar name
+  c_right <- wrap val
+  c_val   <- genExpr val
+  return $ (c_left, c_right) : c_val
 
 intIdConst :: Int
 intIdConst = 1
