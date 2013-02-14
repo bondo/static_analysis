@@ -92,10 +92,6 @@ instance Eq Expr where
   (EDeRef e1 _) == (EDeRef e2 _) = e1 == e2
   a             == b             = e_uid a == e_uid b
 
-instance Ord Expr where
-  (EDeRef e1 _) `compare` (EDeRef e2 _) = e1 `compare` e2
-  a             `compare` b             = e_uid a `compare` e_uid b
-
 instance Show Expr where
   show (EConst v u)           = show v                                                         ++ showUid u
   show (EVar n)               = show n
