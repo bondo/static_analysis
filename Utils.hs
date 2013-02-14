@@ -4,10 +4,10 @@ import Ast (Program, showProgram)
 import Constraints (Constraint, showConstraint, showConstraints, generateConstraints)
 import DisjointSet (string, result)
 import Parser (parseString, parseFile)
-import UnifyTypes (unify, unifyAll, DS_TV)
+import UnifyTypes (unify, unifyAll, getTypes, DS_TV)
 import Weeder (weed)
 
-import Control.Monad (liftM)
+import Control.Monad (liftM, forM_)
 import Data.List (intercalate, intersperse)
 
 parseAndWeedString :: String -> Either String Program
@@ -57,3 +57,14 @@ verboseUnifyFromFile fname = do cs <- getConstraingsFromFile fname
         unifyVerbose :: Constraint -> DS_TV String
         unifyVerbose c = (cont c ++) `liftM` (unify c >> string)
         cont c = "Constraint: " ++ showConstraint c ++ "\n"
+
+printTypesFromFile :: String -> IO ()
+printTypesFromFile fname = do
+  cont <- getConstraingsFromFile fname
+  forM_ (getTypes cont) $ \(e, t) -> putStrLn $ "[" ++ show e ++ "] = " ++ show t
+
+verboseTypesFromFile :: String -> IO ()
+verboseTypesFromFile fname = do
+  putStrLn "Program:"     >> printParsedFile fname    >> putStrLn "\n"
+  putStrLn "Eq. classes:" >> printUnifyFromFile fname >> putStrLn "\n"
+  putStrLn "Types:"       >> printTypesFromFile fname

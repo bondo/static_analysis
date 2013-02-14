@@ -1,12 +1,16 @@
-module UnifyTypes (DS_TV, unify, unifyAll) where
+module UnifyTypes (DS_TV, unify, unifyAll, getTypes) where
 
+import Ast (Expr)
 import Constraints (Constraint)
-import DisjointSet (union, find, DisjointSet)
+import DisjointSet (union, find, result, toList, DisjointSet)
 import TypeVariable (TypeVariable(..), compat)
+import Types (Type(..))
 
-import Control.Monad (zipWithM_, unless)
+import Control.Monad (zipWithM_, unless, liftM, when, forM, ap)
 import qualified Data.Set as Set
+import qualified Data.IntSet as ISet
 import Data.List (intercalate)
+import Data.Maybe (isJust, fromJust)
 
 type DS_TV = DisjointSet TypeVariable
 type Set = Set.Set (Int, Int)
@@ -41,3 +45,39 @@ unifyIfEqual s ta tb | ta `compat` tb = findAndUnify s ta tb
 
 failedUnification :: TypeVariable -> TypeVariable -> a
 failedUnification ta tb = error $ "Unable to unify [" ++ show ta ++ "] with [" ++ show tb ++ "]."
+
+
+getTypes :: [Constraint] -> [(Expr, Type)]
+getTypes = getTypesFromDS . unifyAll
+
+getTypesFromDS :: DS_TV a -> [(Expr, Type)]
+getTypesFromDS ds = concatMap (map doIt . filter isExpr) (toList ds)
+  where doIt tv = (tv_expr tv, getType ds tv)
+        isExpr e | TVExp{} <- e = True
+                 | otherwise    = False
+
+getType :: DS_TV a -> TypeVariable -> Type
+getType ds t = getType' ds [] t
+
+getType' :: DS_TV a -> [(Int, Type)] -> TypeVariable -> Type
+getType' ds ids t =
+  let t'   = result $ ds >> find t
+      tid  = tv_id t'
+      old  = lookup tid ids
+      ty   = getTypeNoCheck ds nids t'
+      nids = (tid, ty) : ids in
+  if isJust old
+    then TReg $ fromJust old
+    else ty
+
+missingInfo = "Not enough information to infer type of "
+
+getTypeNoCheck :: DS_TV a -> [(Int, Type)] -> TypeVariable -> Type
+getTypeNoCheck ds ids (TVInt _)       = TInt
+getTypeNoCheck ds ids (TVRef inner _) = TRef $ getType' ds ids inner
+getTypeNoCheck ds ids (TVExp expr _)  = error $ missingInfo ++ show expr
+getTypeNoCheck ds ids (TVGen _)       = error $ missingInfo ++ "'alpha'"
+getTypeNoCheck ds ids (TVFun formals retval _) =
+  let tformals = map (getType' ds ids) formals
+      tretval  = getType' ds ids retval in
+  TFun tformals tretval

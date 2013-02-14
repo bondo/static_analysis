@@ -45,6 +45,10 @@ empty = return ()
 toList :: DisjointSet e a -> [[e]]
 toList ds = execState ds []
 
+-- Preconditions: list created by toList
+fromList :: [[e]] -> DisjointSet e ()
+fromList lst = empty >> put lst
+
 string :: Show e => DisjointSet e String
 string = (L.intercalate "\n" . map (L.intercalate " == " . map show)) `liftM` get
 
