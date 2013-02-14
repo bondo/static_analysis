@@ -8,6 +8,7 @@ import Text.Parsec hiding (parse)
 import Text.Parsec.Expr
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language (emptyDef)
+import Prelude hiding (fst, snd)
 
 
 -- Exported functions
@@ -51,13 +52,25 @@ P.TokenParser{ P.parens     = parens
 
 -- The parser
 
-type Parser = Parsec String (GUID, [(String, GUID)])
+type Parser = Parsec String (GUID, [(String, GUID)], [(Int, GUID)])
 
-mapFst :: (a -> c) -> (a, b) -> (c, b)
-mapFst f (a, b) = (f a, b)
+fst :: (a, b, c) -> a
+fst (a, b, c) = a
 
-mapSnd :: (b -> c) -> (a, b) -> (a, c)
-mapSnd f (a, b) = (a, f b)
+snd :: (a, b, c) -> b
+snd (a, b, c) = b
+
+trd :: (a, b, c) -> c
+trd (a, b, c) = c
+
+mapFst :: (a -> d) -> (a, b, c) -> (d, b, c)
+mapFst f (a, b, c) = (f a, b, c)
+
+mapSnd :: (b -> d) -> (a, b, c) -> (a, d, c)
+mapSnd f (a, b, c) = (a, f b, c)
+
+mapTrd :: (c -> d) -> (a, b, c) -> (a, b, d)
+mapTrd f (a, b, c) = (a, b, f c)
 
 guid :: Parser GUID
 guid = do uid <- fst <$> getState
@@ -72,12 +85,19 @@ ident = do id <- identifier
                     modifyState $ mapSnd ((id, uid):)
                     return $ Id id uid
 
+int :: Parser Expr
+int = do i <- integer
+         is <- trd <$> getState
+         let ii = fromInteger i
+         maybe (new ii) (return . EConst ii) $ lookup ii is
+  where new i = do uid <- guid
+                   modifyState $ mapTrd ((i, uid):)
+                   return $ EConst i uid
+
 parseExpr :: Parser Expr
 parseExpr = buildExpressionParser table term
             <?> "expression"
-  where term = do i <- integer
-                  uid <- guid
-                  return $ EConst (fromInteger i) uid
+  where term = int
                <|> try (do id <- ident
                            es <- parens $ commaSep parseExpr
                            uid <- guid
@@ -139,4 +159,4 @@ parseProgram :: Parser Program
 parseProgram = whiteSpace >> many parseFunction <* eof
 
 parse :: String -> String -> Either ParseError Program
-parse = runParser parseProgram (1, [])
+parse = runParser parseProgram (1, [], [])
