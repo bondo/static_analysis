@@ -7,14 +7,12 @@ data Type = TInt
           | TFun [Type] Type
           | TReg Type -- Regular type, where the argument is a parent reference
 
+parens :: String -> String
 parens a = "(" ++ a ++ ")"
 
-
-showFun dom cod | null dom = "() -> " ++ show cod
-showFun dom cod = intercalate " -> " (map showFunParens dom) ++ " -> " ++ show cod
-  where showFunParens f@(TFun _ _) = parens $ show f
-        showFunParens t            = show t
-
+showFun :: Int -> [Type] -> Type -> String
+showFun n dom cod | null dom = "() -> " ++ show' n cod
+showFun n dom cod = "(" ++ intercalate ", " (map (show' n) dom) ++ ") -> " ++ show' n cod
 
 instance Eq Type where
   TInt        == TInt         = True
@@ -24,7 +22,10 @@ instance Eq Type where
   _           == _            = False
 
 instance Show Type where
-  show TInt           = "int"
-  show (TRef t)       = '&' : show t
-  show (TFun dom cod) = showFun dom cod
-  show (TReg _)       = "..."
+  show = show' 2
+
+show' n TInt           = "int"
+show' n (TRef t)       = '&' : show' n t
+show' n (TFun dom cod) = showFun n dom cod
+show' 0 (TReg _)       = "..."
+show' n (TReg t)       = show' (n-1) t
