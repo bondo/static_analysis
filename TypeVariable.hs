@@ -18,6 +18,12 @@ instance Eq TypeVariable where
   (TVFun f1 r1 _) == (TVFun f2 r2 _) = f1 == f2 && r1 == r2
   a               == b               = tv_id a == tv_id b
 
+instance Ord TypeVariable where
+  (TVExp e1 _)    `compare` (TVExp e2 _)    = e1 `compare` e2
+  (TVRef e1 _)    `compare` (TVRef e2 _)    = e1 `compare` e2
+  (TVFun f1 r1 _) `compare` (TVFun f2 r2 _) = let fo = f1 `compare` f2 in if fo == EQ then r1 `compare` r2 else fo
+  a               `compare` b               = tv_id a `compare` tv_id b
+
 compat :: TypeVariable -> TypeVariable -> Bool
 TVInt _       `compat` TVInt _       = True
 TVRef v1 _    `compat` TVRef v2 _    = True
