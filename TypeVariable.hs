@@ -6,27 +6,26 @@ import DisjointSet (Elem(..))
 import Data.List (intercalate)
 
 type TVID = Int
-data TypeVariable = TVInt    { tv_id :: TVID }
-                  | TVRef    { tv_inner :: TypeVariable, tv_id :: TVID }
-                  | TVGenRef { tv_id :: TVID } -- &a
-                  | TVFun    { tv_formals :: [TypeVariable], tv_retval :: TypeVariable, tv_id :: TVID }
-                  | TVVar    { tv_expr :: Expr, tv_id :: TVID }
+data TypeVariable = TVInt { tv_id :: TVID }
+                  | TVRef { tv_inner :: TypeVariable, tv_id :: TVID }
+                  | TVFun { tv_formals :: [TypeVariable], tv_retval :: TypeVariable, tv_id :: TVID }
+                  | TVExp { tv_expr :: Expr, tv_id :: TVID } -- [[E]]
+                  | TVGen { tv_id :: TVID } -- alpha
 
 instance Eq TypeVariable where
-  (TVVar e1 _)    == (TVVar e2 _)    = e1 == e2
+  (TVExp e1 _)    == (TVExp e2 _)    = e1 == e2
   (TVRef e1 _)    == (TVRef e2 _)    = e1 == e2
   (TVFun f1 r1 _) == (TVFun f2 r2 _) = f1 == f2 && r1 == r2
   a               == b               = tv_id a == tv_id b
 
 compat :: TypeVariable -> TypeVariable -> Bool
 TVInt _       `compat` TVInt _       = True
-TVRef _ _     `compat` TVRef _ _     = True
-TVGenRef _    `compat` TVRef _ _     = True
-TVRef _ _     `compat` TVGenRef _    = True
-TVGenRef _    `compat` TVGenRef _    = True
+TVRef v1 _    `compat` TVRef v2 _    = True
+TVGen _       `compat` _             = True
+_             `compat` TVGen _       = True
 TVFun f1 r1 _ `compat` TVFun f2 r2 _ = length f1 == length f2 && all id (zipWith compat f1 f2) && compat r1 r2
-TVVar _ _     `compat` _             = True
-_             `compat` TVVar _ _     = True
+TVExp _ _     `compat` _             = True
+_             `compat` TVExp _ _     = True
 _             `compat` _             = False
 
 squares :: String -> String
@@ -55,13 +54,11 @@ showExprPar e            = showPar $ showExpr e
 instance Show TypeVariable where
   show (TVInt i)     = "int"
   show (TVRef t i)   = '&' : show t
-  show (TVVar e i)   = squares $ showExpr e
+  show (TVExp e i)   = squares $ showExpr e
   show (TVFun f r i) = "(" ++ intercalate ", " (map show f) ++ ")->" ++ show r
-  show (TVGenRef i)  = "&a"
+  show (TVGen i)     = "a"
 
 instance Elem TypeVariable where
-  bestRep (TVVar _ _)  b            = b
-  bestRep a            (TVVar _ _)  = a
-  bestRep (TVGenRef _) b            = b
-  bestRep a            (TVGenRef _) = a
-  bestRep a            b            = a
+  bestRep (TVGen _)   b           = b
+  bestRep (TVExp _ _) b           = b
+  bestRep a           _           = a
