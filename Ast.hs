@@ -88,6 +88,12 @@ doc (SNop)          = text "nop" <> char ';'
 instance Show Id where
   show i = i_val i ++ showUid (i_uid i)
 
+instance Eq Id where
+  i1 == i2 = i_uid i1 == i_uid i2
+  
+instance Ord Id where
+  i1 `compare` i2 = i_uid i1 `compare` i_uid i2
+
 instance Eq Expr where
   (EDeRef e1 _) == (EDeRef e2 _) = e1 == e2
   a             == b             = e_uid a == e_uid b
