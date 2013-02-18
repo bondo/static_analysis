@@ -20,7 +20,7 @@ find :: (Elem e, Eq e) => e -> DisjointSet e e
 find a = findPure a >>= maybe (add a >> return a) return
 
 findPure :: (Elem e, Eq e) => e -> DisjointSet e (Maybe e)
-findPure a = (maybe Nothing (Just . head) . L.find (elem a)) `liftM` get
+findPure a = (fmap head . L.find (elem a)) `liftM` get
 
 contains :: (Elem e, Eq e) => e -> DisjointSet e Bool
 contains a = any (elem a) `liftM` get

@@ -57,7 +57,7 @@ getTypesFromDS ds = concatMap (map doIt . filter isExpr) (toList ds)
                  | otherwise    = False
 
 getType :: DS_TV a -> TypeVariable -> Type
-getType ds t = getType' ds [] t
+getType ds = getType' ds []
 
 getType' :: DS_TV a -> [(Int, Type)] -> TypeVariable -> Type
 getType' ds ids t =
@@ -66,9 +66,7 @@ getType' ds ids t =
       old  = lookup tid ids
       ty   = getTypeNoCheck ds nids t'
       nids = (tid, ty) : ids in
-  if isJust old
-    then TReg $ fromJust old
-    else ty
+  maybe ty TReg old
 
 missingInfo = "Not enough information to infer type of "
 
