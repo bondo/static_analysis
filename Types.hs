@@ -1,5 +1,6 @@
 module Types where
 
+import Control.DeepSeq (NFData(rnf))
 import Data.List (intercalate)
 
 data Type = TInt
@@ -23,6 +24,12 @@ instance Eq Type where
 
 instance Show Type where
   show = show' 2
+
+instance NFData Type where
+  rnf TInt        = ()
+  rnf (TRef t)    = rnf t
+  rnf (TFun ts t) = rnf $ t : ts
+  rnf (TReg t)    = rnf t
 
 show' n TInt           = "int"
 show' n (TRef t)       = '&' : show' n t

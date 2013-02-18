@@ -1,5 +1,6 @@
 module Ast where
 
+import Control.DeepSeq (NFData(rnf))
 import Data.Foldable
 import Data.List (intercalate)
 import Data.Monoid hiding ((<>))
@@ -131,3 +132,20 @@ instance Show Function where
                                         , nest tabSize (text "return" <+> text (show r) <> char ';')
                                         , rbrace
                                         ]
+
+instance NFData Id where
+  rnf (Id val uid) = rnf (val, uid)
+
+instance NFData BinOp
+
+instance NFData Expr where
+  rnf (EConst v u)            = rnf (v, u)
+  rnf (EVar n)                = rnf n
+  rnf (EBinOp op l r u)       = rnf (op, l, r, u)
+  rnf (EAppNamed n args u)    = rnf (n, args, u)
+  rnf (EAppUnnamed e args u)  = rnf (e, args, u)
+  rnf (ERef n u)              = rnf n
+  rnf (EDeRef e u)            = rnf (e, u)
+  rnf (EInput u)              = rnf u
+  rnf (EMalloc u)             = rnf u
+  rnf (ENull u)               = rnf u

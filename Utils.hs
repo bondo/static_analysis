@@ -10,6 +10,7 @@ import Parser (parseString, parseFile)
 import UnifyTypes (unify, unifyAll, getTypes, DS_TV)
 import Weeder (weed)
 
+import Control.DeepSeq (force)
 import Control.Monad (liftM, forM_)
 import Data.List (intercalate, intersperse)
 
@@ -67,7 +68,7 @@ verboseUnifyFromFile fname = do cs <- getConstraingsFromFile fname
 printTypesFromFile :: String -> IO ()
 printTypesFromFile fname = do
   cont <- getConstraingsFromFile fname
-  forM_ (getTypes cont) $ \(e, t) -> putStrLn $ "[" ++ show e ++ "] = " ++ show t
+  forM_ (force $ getTypes cont) $ \(e, t) -> putStrLn $ "[" ++ show e ++ "] = " ++ show t
 
 verboseTypesFromFile :: String -> IO ()
 verboseTypesFromFile fname = do
