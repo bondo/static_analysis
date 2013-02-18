@@ -1,6 +1,9 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Utils where
 
 import Ast (Program, showProgram)
+import CheckScopes (checkScopes)
 import Constraints (Constraint, showConstraint, showConstraints, generateConstraints)
 import DisjointSet (string, result)
 import Parser (parseString, parseFile)
@@ -35,11 +38,14 @@ getProgramFromFile :: String -> IO Program
 getProgramFromFile fname = getRight `liftM` parseAndWeedFile fname
 
 getConstraingsFromFile :: String -> IO [Constraint]
-getConstraingsFromFile fname = generateConstraints `liftM` getProgramFromFile fname
+getConstraingsFromFile fname = do program <- getProgramFromFile fname
+                                  let !ids = checkScopes program
+                                  return $ generateConstraints program
 
 printConstraintsFromString :: String -> IO ()
 printConstraintsFromString str = do
   let program = getProgramFromString str
+  let !ids = checkScopes program
   putStrLn $ concatMap ((++"\n\n") . show) program
   putStrLn . showConstraints . generateConstraints $ program
 
