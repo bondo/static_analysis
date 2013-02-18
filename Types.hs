@@ -29,7 +29,7 @@ instance NFData Type where
   rnf TInt        = ()
   rnf (TRef t)    = rnf t
   rnf (TFun ts t) = rnf $ t : ts
-  rnf (TReg t)    = rnf t
+  rnf (TReg t)    = () -- Do not force evaluation of t, that would cause an infinite loop
 
 show' n TInt           = "int"
 show' n (TRef t)       = '&' : show' n t
