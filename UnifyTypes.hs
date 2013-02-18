@@ -6,6 +6,7 @@ import DisjointSet (union, find, result, toList, DisjointSet)
 import TypeVariable (TypeVariable(..), compat)
 import Types (Type(..))
 
+import Control.Arrow ((&&&))
 import Control.Monad (zipWithM_, unless, liftM, when, forM, ap)
 import qualified Data.Set as Set
 import qualified Data.IntSet as ISet
@@ -51,9 +52,8 @@ getTypes :: [Constraint] -> [(Expr, Type)]
 getTypes = getTypesFromDS . unifyAll
 
 getTypesFromDS :: DS_TV a -> [(Expr, Type)]
-getTypesFromDS ds = concatMap (map doIt . filter isExpr) (toList ds)
-  where doIt tv = (tv_expr tv, getType ds tv)
-        isExpr e | TVExp{} <- e = True
+getTypesFromDS ds = concatMap (map (tv_expr &&& getType ds) . filter isExpr) (toList ds)
+  where isExpr e | TVExp{} <- e = True
                  | otherwise    = False
 
 getType :: DS_TV a -> TypeVariable -> Type
