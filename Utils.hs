@@ -40,13 +40,13 @@ getProgramFromFile fname = getRight `liftM` parseAndWeedFile fname
 
 getConstraingsFromFile :: String -> IO [Constraint]
 getConstraingsFromFile fname = do program <- getProgramFromFile fname
-                                  let !ids = checkScopes program
+                                  let !_ = checkScopes program
                                   return $ generateConstraints program
 
 printConstraintsFromString :: String -> IO ()
 printConstraintsFromString str = do
   let program = getProgramFromString str
-  let !ids = checkScopes program
+  let !_ = checkScopes program
   putStrLn $ concatMap ((++"\n\n") . show) program
   putStrLn . showConstraints . generateConstraints $ program
 
