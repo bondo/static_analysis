@@ -74,9 +74,7 @@ printTypesFromString :: String -> IO ()
 printTypesFromString = printTypesFromConstraints . getConstraintsFromString
 
 printTypesFromFile :: String -> IO ()
-printTypesFromFile fname = do
-  cont <- getConstraintsFromFile fname
-  forM_ (force $ getTypes cont) $ \(e, t) -> putStrLn $ "[" ++ show e ++ "] = " ++ show t
+printTypesFromFile fname = getConstraintsFromFile fname >>= printTypesFromConstraints
 
 verboseTypesFromFile :: String -> IO ()
 verboseTypesFromFile fname = do
