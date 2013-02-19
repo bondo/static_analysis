@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Utils where
 
 import Ast (Program, showProgram)
@@ -38,26 +36,29 @@ getProgramFromString str =  getRight $ parseAndWeedString str
 getProgramFromFile :: String -> IO Program
 getProgramFromFile fname = getRight `liftM` parseAndWeedFile fname
 
-getConstraingsFromFile :: String -> IO [Constraint]
-getConstraingsFromFile fname = do program <- getProgramFromFile fname
-                                  let !_ = checkScopes program
-                                  return $ generateConstraints program
+getConstraintsFromProgram :: Program -> [Constraint]
+getConstraintsFromProgram program = checkScopes program `seq` generateConstraints program
+
+getConstraintsFromString :: String -> [Constraint]
+getConstraintsFromString = getConstraintsFromProgram . getProgramFromString
+
+getConstraintsFromFile :: String -> IO [Constraint]
+getConstraintsFromFile fname = getConstraintsFromProgram `liftM` getProgramFromFile fname
 
 printConstraintsFromString :: String -> IO ()
 printConstraintsFromString str = do
   let program = getProgramFromString str
-  let !_ = checkScopes program
   putStrLn $ concatMap ((++"\n\n") . show) program
-  putStrLn . showConstraints . generateConstraints $ program
+  putStrLn . showConstraints . getConstraintsFromProgram $ program
 
 printConstraintsFromFile :: String -> IO ()
 printConstraintsFromFile fname = readFile fname >>= printConstraintsFromString
 
 printUnifyFromFile :: String -> IO ()
-printUnifyFromFile fname = getConstraingsFromFile fname >>= print . unifyAll
+printUnifyFromFile fname = getConstraintsFromFile fname >>= print . unifyAll
 
 verboseUnifyFromFile :: String -> IO ()
-verboseUnifyFromFile fname = do cs <- getConstraingsFromFile fname
+verboseUnifyFromFile fname = do cs <- getConstraintsFromFile fname
                                 mapM_ (putStrLn . (++"\n")) . result . unifyAllVerbose $ cs
   where unifyAllVerbose :: [Constraint] -> DS_TV [String]
         unifyAllVerbose = mapM unifyVerbose
@@ -65,9 +66,16 @@ verboseUnifyFromFile fname = do cs <- getConstraingsFromFile fname
         unifyVerbose c = (cont c ++) `liftM` (unify c >> string)
         cont c = "Constraint: " ++ showConstraint c ++ "\n"
 
+printTypesFromConstraints :: [Constraint] -> IO ()
+printTypesFromConstraints cont =
+  forM_ (force $ getTypes cont) $ \(e, t) -> putStrLn $ "[" ++ show e ++ "] = " ++ show t
+
+printTypesFromString :: String -> IO ()
+printTypesFromString = printTypesFromConstraints . getConstraintsFromString
+
 printTypesFromFile :: String -> IO ()
 printTypesFromFile fname = do
-  cont <- getConstraingsFromFile fname
+  cont <- getConstraintsFromFile fname
   forM_ (force $ getTypes cont) $ \(e, t) -> putStrLn $ "[" ++ show e ++ "] = " ++ show t
 
 verboseTypesFromFile :: String -> IO ()
