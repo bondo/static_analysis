@@ -10,7 +10,6 @@ import Weeder (weed)
 
 import Control.DeepSeq (force)
 import Control.Monad (liftM, forM_)
-import Data.List (intercalate, intersperse)
 
 parseAndWeedString :: String -> Either String Program
 parseAndWeedString = either (Left . show) weed . parseString
@@ -60,9 +59,7 @@ printUnifyFromFile fname = getConstraintsFromFile fname >>= print . unifyAll
 verboseUnifyFromFile :: String -> IO ()
 verboseUnifyFromFile fname = do cs <- getConstraintsFromFile fname
                                 mapM_ (putStrLn . (++"\n")) . result . unifyAllVerbose $ cs
-  where unifyAllVerbose :: [Constraint] -> DS_TV [String]
-        unifyAllVerbose = mapM unifyVerbose
-        unifyVerbose :: Constraint -> DS_TV String
+  where unifyAllVerbose = mapM unifyVerbose
         unifyVerbose c = (cont c ++) `liftM` (unify c >> string)
         cont c = "Constraint: " ++ showConstraint c ++ "\n"
 

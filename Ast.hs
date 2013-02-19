@@ -1,9 +1,7 @@
 module Ast where
 
 import Control.DeepSeq (NFData(rnf))
-import Data.Foldable
 import Data.List (intercalate)
-import Data.Monoid hiding ((<>))
 import Text.PrettyPrint
 
 type GUID = Int
