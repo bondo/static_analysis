@@ -1,20 +1,18 @@
 module Lattice (Lattice(..)) where
 
 import Data.List
---import Data.Maybe
 import Prelude hiding (pred, succ)
 
-class Lattice e where
+-- Ord instances are usefull for arbitrary sorting, they will usually
+-- be derived and have no relation to leq
+class Ord e => Lattice e where
   leq :: e -> e -> Maybe Bool
   pred :: e -> [e]
   succ :: e -> [e]
-  top :: e
-  bottom :: e
-  
-  -- Ord instances are usefull for sorting, they will usually be
-  -- derived and have no relation to leq
-  leastUpperBound :: Ord e => e -> e -> e
-  greatestLowerBound :: Ord e => e -> e -> e
+  top :: e -> e
+  bottom :: e -> e
+  leastUpperBound :: e -> e -> e
+  greatestLowerBound :: e -> e -> e
 
   -- Default to transitive closure implementations
   leastUpperBound = leastUpperBound'
@@ -44,6 +42,6 @@ leastUpperBound' a b = foldl1' folder $ closureIntersection succ a b
 greatestLowerBound' :: (Ord e, Lattice e) => e -> e -> e
 greatestLowerBound' a b = foldl1' folder $ closureIntersection pred a b
   where folder a b = case a `leq` b of
-          Just True  -> a
-          Just False -> b
+          Just True  -> b
+          Just False -> a
           Nothing    -> error "Lattice.GLB: Precondition failed"

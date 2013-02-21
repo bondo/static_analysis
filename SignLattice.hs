@@ -25,9 +25,9 @@ instance Lattice SignLattice where
   succ Plus = [Top]
   succ Top = []
 
-  top = Top
+  top _ = Top
 
-  bottom = Bottom
+  bottom _ = Bottom
 
 instance Num SignLattice where
   Bottom + _      = Bottom
