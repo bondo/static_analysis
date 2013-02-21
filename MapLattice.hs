@@ -14,8 +14,8 @@ instance (Ord k, Lattice v) => Lattice (Map k v) where
                 if all (v==) vs then v else Nothing
   pred = concatAdjust pred
   succ = concatAdjust succ
-  top m = Map.map top m
-  bottom m = Map.map bottom m
+  top = Map.map top
+  bottom = Map.map bottom
 
 concatAdjust :: (Ord k, Lattice v) => (v -> [v]) -> Map k v -> [Map k v]
 concatAdjust ite m =
