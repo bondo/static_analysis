@@ -6,21 +6,21 @@ import Text.PrettyPrint
 
 type GUID = Int
 
-data Id = Id { i_val :: String, i_uid :: GUID }
+data Id = Id { iVal :: String, iUid :: GUID }
 
 data Expr = -- E
-    EConst      { e_val  :: Int, e_uid' :: GUID }
-  | EVar        { e_name :: Id }
-  | EBinOp      { e_op   :: BinOp, e_left :: Expr, e_right :: Expr, e_uid' :: GUID }
-  | EAppNamed   { e_name :: Id,   e_args :: [Expr], e_uid' :: GUID } -- id(E,...,E)
-  | EAppUnnamed { e_expr :: Expr, e_args :: [Expr], e_uid' :: GUID } -- (E)(E,...,E)
-  | ERef        { e_name :: Id,   e_uid' :: GUID } -- &id
-  | EDeRef      { e_expr :: Expr, e_uid' :: GUID } -- *E
-  | EInput      { e_uid' :: GUID }
-  | EMalloc     { e_uid' :: GUID }
-  | ENull       { e_uid' :: GUID }
-e_uid (EVar n) = i_uid n
-e_uid e        = e_uid' e
+    EConst      { eVal  :: Int, eUid' :: GUID }
+  | EVar        { eName :: Id }
+  | EBinOp      { eOp   :: BinOp, eLeft :: Expr, eRight :: Expr, eUid' :: GUID }
+  | EAppNamed   { eName :: Id,   eArgs :: [Expr], eUid' :: GUID } -- id(E,...,E)
+  | EAppUnnamed { eExpr :: Expr, eArgs :: [Expr], eUid' :: GUID } -- (E)(E,...,E)
+  | ERef        { eName :: Id,   eUid' :: GUID } -- &id
+  | EDeRef      { eExpr :: Expr, eUid' :: GUID } -- *E
+  | EInput      { eUid' :: GUID }
+  | EMalloc     { eUid' :: GUID }
+  | ENull       { eUid' :: GUID }
+eUid (EVar n) = iUid n
+eUid e        = eUid' e
 
 data BinOp = BPlus
            | BMinus
@@ -29,20 +29,20 @@ data BinOp = BPlus
            | BGt
            | BEq
 
-data Stm = SAss    { s_name :: Id, s_val :: Expr }
-         | SAssRef { s_name :: Id, s_val :: Expr } -- *id = E
-         | SOutput { s_val  :: Expr }
-         | SSeq    { s_stms :: [Stm] }
-         | SIfElse { s_cond :: Expr, s_then :: Stm, s_else :: Stm }
-         | SWhile  { s_cond :: Expr, s_body :: Stm }
-         | SDecl   { s_ids  :: [Id] }
-         | SReturn { s_val  :: Expr } -- Only use this to simplify parsing, weed it out later
+data Stm = SAss    { sName :: Id, sVal :: Expr }
+         | SAssRef { sName :: Id, sVal :: Expr } -- *id = E
+         | SOutput { sVal  :: Expr }
+         | SSeq    { sStms :: [Stm] }
+         | SIfElse { sCond :: Expr, sThen :: Stm, sElse :: Stm }
+         | SWhile  { sCond :: Expr, sBody :: Stm }
+         | SDecl   { sIds  :: [Id] }
+         | SReturn { sVal  :: Expr } -- Only use this to simplify parsing, weed it out later
          | SNop -- Has no syntax
 
 data Function =
   -- Use when there's SReturns in Stm, convert to FNamed in the weeder
-     FNamedSimple { f_name :: Id, f_formals :: [Id], f_body :: Stm }
-   | FNamed       { f_name :: Id, f_formals :: [Id], f_body :: Stm, f_retval :: Expr }
+     FNamedSimple { fName :: Id, fFormals :: [Id], fBody :: Stm }
+   | FNamed       { fName :: Id, fFormals :: [Id], fBody :: Stm, fRetval :: Expr }
 
 type Program = [Function]
 
@@ -85,17 +85,17 @@ doc (SNop)          = text "nop" <> char ';'
 -- Instances
 
 instance Show Id where
-  show i = i_val i ++ showUid (i_uid i)
+  show i = iVal i ++ showUid (iUid i)
 
 instance Eq Id where
-  i1 == i2 = i_uid i1 == i_uid i2
+  i1 == i2 = iUid i1 == iUid i2
   
 instance Ord Id where
-  i1 `compare` i2 = i_uid i1 `compare` i_uid i2
+  i1 `compare` i2 = iUid i1 `compare` iUid i2
 
 instance Eq Expr where
   (EDeRef e1 _) == (EDeRef e2 _) = e1 == e2
-  a             == b             = e_uid a == e_uid b
+  a             == b             = eUid a == eUid b
 
 instance Show Expr where
   show (EConst v u)           = show v                                                         ++ showUid u

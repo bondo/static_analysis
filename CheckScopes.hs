@@ -1,6 +1,6 @@
 module CheckScopes (checkScopes) where
 
-import Ast (Program, Function(..), Stm(..), Expr(..), Id, i_val)
+import Ast (Program, Function(..), Stm(..), Expr(..), Id, iVal)
 
 import Control.Arrow ((&&&))
 import Control.Monad (mapM_, unless, foldM)
@@ -20,16 +20,16 @@ checkScopes p = execState (checkProgram fs p) fs
 checkFunctionNames :: Program -> [Id]
 checkFunctionNames p = if null dupes then names else err $ head dupes
   where dupes = filter ((>1) . fst) . map (length &&& head) . group $ sort names
-        err g = error $ "The function " ++ i_val (snd g) ++ " is defined " ++ show (fst g) ++ " times"
-        names = map f_name p
+        err g = error $ "The function " ++ iVal (snd g) ++ " is defined " ++ show (fst g) ++ " times"
+        names = map fName p
 
 checkProgram :: IdSet -> Program -> IntroTracker ()
 checkProgram scope = mapM_ $ checkFunction scope
 
 checkFunction :: IdSet -> Function -> IntroTracker ()
-checkFunction scope f@FNamed{} = do scope' <- foldM intro scope $ f_formals f
-                                    scope'' <- checkStm scope' $ f_body f
-                                    checkExpr scope'' $ f_retval f
+checkFunction scope f@FNamed{} = do scope' <- foldM intro scope $ fFormals f
+                                    scope'' <- checkStm scope' $ fBody f
+                                    checkExpr scope'' $ fRetval f
 checkFunction _ _ = error "Scope checking only implemented for weeded functions"
 
 checkStm :: IdSet -> Stm -> IntroTracker IdSet
@@ -57,12 +57,12 @@ checkExpr s (ENull _)                 = return ()
 
 intro :: IdSet -> Id -> IntroTracker IdSet
 intro scope id = if id `Set.member` scope then error $
-                 "The identifier " ++ i_val id ++ " cannot be shadowed"
+                 "The identifier " ++ iVal id ++ " cannot be shadowed"
                  else do intros <- get
                          if id `Set.member` intros
-                           then error $ "The identifier " ++ i_val id ++ " is used in two different scopes"
+                           then error $ "The identifier " ++ iVal id ++ " is used in two different scopes"
                            else put (id `Set.insert` intros) >> return (id `Set.insert` scope)
 
 check :: IdSet -> Id -> IntroTracker ()
 check scope id = unless (id `Set.member` scope) $ error $
-                 "The identifier " ++ i_val id ++ " is used out of scope"
+                 "The identifier " ++ iVal id ++ " is used out of scope"

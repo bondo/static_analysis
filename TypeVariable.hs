@@ -1,22 +1,22 @@
 module TypeVariable where
 
-import Ast (Expr(..), i_val, showPar)
+import Ast (Expr(..), iVal, showPar)
 import DisjointSet (Elem(..))
 
 import Data.List (intercalate)
 
 type TVID = Int
-data TypeVariable = TVInt { tv_id :: TVID }
-                  | TVRef { tv_inner :: TypeVariable, tv_id :: TVID }
-                  | TVFun { tv_formals :: [TypeVariable], tv_retval :: TypeVariable, tv_id :: TVID }
-                  | TVExp { tv_expr :: Expr, tv_id :: TVID } -- [[E]]
-                  | TVGen { tv_id :: TVID } -- alpha
+data TypeVariable = TVInt { tvId :: TVID }
+                  | TVRef { tvInner :: TypeVariable, tvId :: TVID }
+                  | TVFun { tvFormals :: [TypeVariable], tvRetval :: TypeVariable, tvId :: TVID }
+                  | TVExp { tvExpr :: Expr, tvId :: TVID } -- [[E]]
+                  | TVGen { tvId :: TVID } -- alpha
 
 instance Eq TypeVariable where
   (TVExp e1 _)    == (TVExp e2 _)    = e1 == e2
   (TVRef e1 _)    == (TVRef e2 _)    = e1 == e2
   (TVFun f1 r1 _) == (TVFun f2 r2 _) = f1 == f2 && r1 == r2
-  a               == b               = tv_id a == tv_id b
+  a               == b               = tvId a == tvId b
 
 compat :: TypeVariable -> TypeVariable -> Bool
 TVInt _       `compat` TVInt _       = True
@@ -33,11 +33,11 @@ squares s = "[" ++ s ++ "]"
 
 showExpr :: Expr -> String
 showExpr (EConst v u)           = show v
-showExpr (EVar n)               = i_val n
+showExpr (EVar n)               = iVal n
 showExpr (EBinOp op l r u)      = showExpr l ++ " " ++ show op ++ " " ++ showExpr r
-showExpr (EAppNamed n args u)   = i_val n ++ showPar (intercalate ", " $ map showExpr args)
+showExpr (EAppNamed n args u)   = iVal n ++ showPar (intercalate ", " $ map showExpr args)
 showExpr (EAppUnnamed e args u) = showPar (showExpr e) ++ showPar (intercalate ", " $ map showExpr args)
-showExpr (ERef n u)             = '&' : i_val n
+showExpr (ERef n u)             = '&' : iVal n
 showExpr (EDeRef e u)           = '*' : showExprPar e
 showExpr (EInput u)             = "input"
 showExpr (EMalloc u)            = "malloc"
@@ -45,7 +45,7 @@ showExpr (ENull u)              = "null"
 
 showExprPar :: Expr -> String
 showExprPar (EConst v u) = show v
-showExprPar (EVar n)     = i_val n
+showExprPar (EVar n)     = iVal n
 showExprPar (EInput u)   = "input"
 showExprPar (EMalloc u)  = "malloc"
 showExprPar (ENull u)    = "null"

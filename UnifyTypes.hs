@@ -27,7 +27,7 @@ findAndUnify s ta tb = do
   ta' <- find ta
   tb' <- find tb
   unless (Set.member ids s) $ unify' (Set.insert ids s) ta' tb'
-  where ids = (tv_id ta, tv_id tb)
+  where ids = (tvId ta, tvId tb)
 
 unify' :: Set -> TypeVariable -> TypeVariable -> DS_TV ()
 unify' s ta@(TVInt _)       tb@(TVInt _)       = ta `union` tb
@@ -52,7 +52,7 @@ getTypes :: [Constraint] -> [(Expr, Type)]
 getTypes = getTypesFromDS . unifyAll
 
 getTypesFromDS :: DS_TV a -> [(Expr, Type)]
-getTypesFromDS ds = concatMap (map (tv_expr &&& getType ds) . filter isExpr) (toList ds)
+getTypesFromDS ds = concatMap (map (tvExpr &&& getType ds) . filter isExpr) (toList ds)
   where isExpr e | TVExp{} <- e = True
                  | otherwise    = False
 
@@ -62,7 +62,7 @@ getType ds = getType' ds []
 getType' :: DS_TV a -> [(Int, Type)] -> TypeVariable -> Type
 getType' ds ids t =
   let t'   = result $ ds >> find t
-      tid  = tv_id t'
+      tid  = tvId t'
       old  = lookup tid ids
       ty   = getTypeNoCheck ds nids t'
       nids = (tid, ty) : ids in

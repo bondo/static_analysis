@@ -1,6 +1,6 @@
 module Weeder (weed) where
 
-import Ast (Program, Function(..), Stm(..), i_val)
+import Ast (Program, Function(..), Stm(..), iVal)
 
 import Control.Monad.Instances -- Instance for (Monad (Either String))
 import Data.Generics.Aliases (orElse)
@@ -15,12 +15,12 @@ missingReturn = "Return statement missing at the end of "
 
 -- Convert FNamedSimple to FNamed and "compress" statements
 cleanFunction :: Function -> Either String Function
-cleanFunction (FNamedSimple name _ (SSeq []))       = Left $ missingReturn ++ i_val name
+cleanFunction (FNamedSimple name _ (SSeq []))       = Left $ missingReturn ++ iVal name
 cleanFunction (FNamedSimple name formals (SSeq ss)) = case last ss of
   SReturn ret -> Right $ FNamed name formals (compressStm . SSeq $ init ss) ret
-  _           -> Left  $ missingReturn ++ i_val name
+  _           -> Left  $ missingReturn ++ iVal name
 cleanFunction (FNamedSimple name formals (SReturn expr)) = Right $ FNamed name formals SNop expr
-cleanFunction (FNamedSimple name _ _)                    = Left  $ missingReturn ++ i_val name
+cleanFunction (FNamedSimple name _ _)                    = Left  $ missingReturn ++ iVal name
 cleanFunction (FNamed n f s r)                           = Right $ FNamed n f (compressStm s) r
 
 -- The parser emits a lot more SSeq then it should, so clean it up
@@ -35,8 +35,8 @@ compressStm s                 = s
 
 -- Check to make sure no more SReturn statements exists
 checkReturn :: Function -> Maybe String
-checkReturn f = annotate . checkReturn' $ f_body f
-  where annotate (Just msg) = Just $ "Error in " ++ i_val (f_name f) ++ ": " ++ msg
+checkReturn f = annotate . checkReturn' $ fBody f
+  where annotate (Just msg) = Just $ "Error in " ++ iVal (fName f) ++ ": " ++ msg
         annotate Nothing    = Nothing
 
 checkReturn' :: Stm -> Maybe String
