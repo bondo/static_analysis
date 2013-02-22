@@ -39,6 +39,12 @@ data CfgGenState = CfgGenState { gsNuid :: Uid, gsNodes :: UidMap CfgGenNode }
 
 type CfgGen = State CfgGenState
 
+
+-- Utility functions for handling state
+
+nuid :: CfgGen Uid
+nuid = state $ \st -> (gsNuid st, st { gsNuid = gsNuid st + 1 })
+
 modifyNodes :: (UidMap CfgGenNode -> UidMap CfgGenNode) -> CfgGen ()
 modifyNodes f = modify $ \st -> st { gsNodes = f $ gsNodes st }
 
@@ -76,20 +82,13 @@ setPreds preds = modifyNode $ \n -> n { gnPred = UidSet.fromList preds }
 setSuccs :: [Uid] -> Uid -> CfgGen ()
 setSuccs succs = modifyNode $ \n -> n { gnSucc = UidSet.fromList succs }
 
-cfgFromProgram :: Program -> Cfg
-cfgFromProgram = undefined
 
-fromProgram :: Program -> CfgGen Cfg
-fromProgram = undefined
-
-fromFunction :: Function -> CfgGen Cfg
-fromFunction = undefined
-
-nuid :: CfgGen Uid
-nuid = undefined
+-- Utility functions for handling CFG nodes
 
 nop :: CfgGen Uid
-nop = undefined
+nop = do uid <- nuid
+         setNode uid $ GNNop UidSet.empty UidSet.empty
+         return uid
 
 chain :: (Uid, Uid) -> (Uid, Uid) -> CfgGen (Uid, Uid)
 chain (p1, s1) (p2, s2) = do s1ps <- getPreds s1
@@ -109,9 +108,20 @@ create con = do p <- nop
                 addPred n s
                 return (p, s)
 
+
+-- Functions that return finished CFGs
+
+cfgFromProgram :: Program -> Cfg
+cfgFromProgram = undefined
+
+fromProgram :: Program -> CfgGen Cfg
+fromProgram = undefined
+
+fromFunction :: Function -> CfgGen Cfg
+fromFunction = undefined
+
+
+-- Functions that build intermediate CFG representation
+
 fromStm :: Stm -> CfgGen (Uid, Uid)
 fromStm s@SAss{} = undefined
-
-
-
-
