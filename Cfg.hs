@@ -42,40 +42,39 @@ type CfgGen = State CfgGenState
 modifyNodes :: (UidMap CfgGenNode -> UidMap CfgGenNode) -> CfgGen ()
 modifyNodes f = modify $ \st -> st { gsNodes = f $ gsNodes st }
 
--- Precondition: uid is in map
-modifyNode :: Uid -> (CfgGenNode -> CfgGenNode) -> CfgGen ()
-modifyNode uid f = modifyNodes $ \ns -> UidMap.insert uid (f $ ns UidMap.! uid) ns
+modifyNode :: (CfgGenNode -> CfgGenNode) -> Uid -> CfgGen ()
+modifyNode f = modifyNodes . UidMap.adjust f
 
--- Precondition: uid is in map
+setNode :: Uid -> CfgGenNode -> CfgGen ()
+setNode uid = modifyNodes . UidMap.insert uid
+
+-- Precondition: uid in map
 getNode :: Uid -> CfgGen CfgGenNode
 getNode uid = (UidMap.! uid) `liftM` gets gsNodes
 
-setNode :: Uid -> CfgGenNode -> CfgGen ()
-setNode uid n = modify $ \st -> st { gsNodes = UidMap.insert uid n $ gsNodes st }
+-- Precondition: uid in map
+getsNode :: (CfgGenNode -> a) -> Uid -> CfgGen a
+getsNode f uid = f `liftM` getNode uid
 
--- Precondition: uid is in map
+-- Precondition: uid in map
 getPreds :: Uid -> CfgGen [Uid]
-getPreds uid = (UidSet.toList . gnPred) `liftM` getNode uid
+getPreds = getsNode $ UidSet.toList . gnPred
 
--- Precondition: uid is in map
+-- Precondition: uid in map
 getSuccs :: Uid -> CfgGen [Uid]
-getSuccs uid = (UidSet.toList . gnSucc) `liftM` getNode uid
+getSuccs = getsNode $ UidSet.toList . gnSucc
 
--- Precondition: n is in map
 addPred :: Uid -> Uid -> CfgGen ()
-addPred p n = undefined
+addPred pred = modifyNode $ \n -> n { gnPred = UidSet.insert pred $ gnPred n }
 
--- Precondition: n is in map
 addSucc :: Uid -> Uid -> CfgGen ()
-addSucc s n = undefined
+addSucc succ = modifyNode $ \n -> n { gnSucc = UidSet.insert succ $ gnSucc n }
 
--- Precondition: n is in map
 setPreds :: [Uid] -> Uid -> CfgGen ()
-setPreds ps n = undefined
+setPreds preds = modifyNode $ \n -> n { gnPred = UidSet.fromList preds }
 
--- Precondition: n is in map
 setSuccs :: [Uid] -> Uid -> CfgGen ()
-setSuccs ss n = undefined
+setSuccs succs = modifyNode $ \n -> n { gnSucc = UidSet.fromList succs }
 
 cfgFromProgram :: Program -> Cfg
 cfgFromProgram = undefined
