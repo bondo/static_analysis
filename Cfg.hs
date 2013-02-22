@@ -1,52 +1,81 @@
-module Cfg (cfgFromProgram) where
+module Cfg (cfgFromProgram, Cfg(..), CfgNode(..)) where
 
 import Ast
 
-import Control.Monad (mapM_)
+import Control.Monad (mapM_, liftM)
 import Control.Monad.State
 import Data.IntMap (IntMap)
-import qualified Data.IntMap as Map
+import qualified Data.IntMap as UidMap
 import Data.IntSet (IntSet)
-import qualified Data.IntSet as Set
+import qualified Data.IntSet as UidSet
 
 type Uid = Int
+type UidSet = IntSet
+type UidMap = IntMap
 
-data Cfg = Cfg { c_entry :: CfgNode, c_exit :: CfgNode }
+data Cfg = Cfg { cEntry :: CfgNode, cExit :: CfgNode }
 
-data CfgNode = CAss    { c_stm :: Stm,
-                         c_pred :: [Cfg], c_succ :: [Cfg], c_uid :: Uid }
-             | COutput { c_expr :: Expr,
-                         c_pred :: [Cfg], c_succ :: [Cfg], c_uid :: Uid }
-             | CBranch { c_expr :: Expr, c_true :: CfgNode, c_false :: CfgNode, c_stm :: Stm,
-                         c_pred :: [Cfg], c_succ :: [Cfg], c_uid :: Uid }
-             | CDecl   { c_ids :: [Id],
-                         c_pred :: [Cfg], c_succ :: [Cfg], c_uid :: Uid }
-             | CNop    { c_pred :: [Cfg], c_succ :: [Cfg], c_uid :: Uid }
+data CfgNode = CAss    { cStm :: Stm,
+                         cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
+             | COutput { cExpr :: Expr,
+                         cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
+             | CBranch { cExpr :: Expr, cTrue :: CfgNode, cFalse :: CfgNode, cStm :: Stm,
+                         cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
+             | CDecl   { cIds :: [Id],
+                         cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
+             | CNop    { cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
 
-data CfgGenNode = CfgGenNode { gn_node :: CfgNode, gn_pred :: IntSet, gn_succ :: IntSet }
-data CfgGenState = CfgGenState { gs_nuid :: Uid, gs_nodes :: IntMap CfgGenNode }
+data CfgGenNode = GNAss    { gnStm :: Stm,
+                             gnPred :: UidSet, gnSucc :: UidSet }
+                | GNOutput { gnExpr :: Expr,
+                             gnPred :: UidSet, gnSucc :: UidSet }
+                | GNBranch { gnExpr :: Expr, gnStm :: Stm, gnTrue :: Uid, gnFalse :: Uid,
+                             gnPred :: UidSet, gnSucc :: UidSet }
+                | GNDecl   { gnIds :: [Id],
+                             gnPred :: UidSet, gnSucc :: UidSet }
+                | GNNop    { gnPred :: UidSet, gnSucc :: UidSet }
+
+data CfgGenState = CfgGenState { gsNuid :: Uid, gsNodes :: UidMap CfgGenNode }
+
 type CfgGen = State CfgGenState
 
+modifyNodes :: (UidMap CfgGenNode -> UidMap CfgGenNode) -> CfgGen ()
+modifyNodes f = modify $ \st -> st { gsNodes = f $ gsNodes st }
+
+-- Precondition: uid is in map
+modifyNode :: Uid -> (CfgGenNode -> CfgGenNode) -> CfgGen ()
+modifyNode uid f = modifyNodes $ \ns -> UidMap.insert uid (f $ ns UidMap.! uid) ns
+
+-- Precondition: uid is in map
+getNode :: Uid -> CfgGen CfgGenNode
+getNode uid = (UidMap.! uid) `liftM` gets gsNodes
+
+setNode :: Uid -> CfgGenNode -> CfgGen ()
+setNode uid n = modify $ \st -> st { gsNodes = UidMap.insert uid n $ gsNodes st }
+
+-- Precondition: uid is in map
 getPreds :: Uid -> CfgGen [Uid]
-getPreds = undefined
+getPreds uid = (UidSet.toList . gnPred) `liftM` getNode uid
 
+-- Precondition: uid is in map
 getSuccs :: Uid -> CfgGen [Uid]
-getSuccs = undefined
+getSuccs uid = (UidSet.toList . gnSucc) `liftM` getNode uid
 
+-- Precondition: n is in map
 addPred :: Uid -> Uid -> CfgGen ()
 addPred p n = undefined
 
+-- Precondition: n is in map
 addSucc :: Uid -> Uid -> CfgGen ()
 addSucc s n = undefined
 
+-- Precondition: n is in map
 setPreds :: [Uid] -> Uid -> CfgGen ()
 setPreds ps n = undefined
 
+-- Precondition: n is in map
 setSuccs :: [Uid] -> Uid -> CfgGen ()
 setSuccs ss n = undefined
-
-addNode :: CfgNode -> CfgGen ()
-addNode = undefined
 
 cfgFromProgram :: Program -> Cfg
 cfgFromProgram = undefined
@@ -70,11 +99,11 @@ chain (p1, s1) (p2, s2) = do s1ps <- getPreds s1
                              mapM_ (setSuccs p2ss) s1ps
                              return (p1, s2)
 
-create :: ([Cfg] -> [Cfg] -> Uid -> CfgNode) -> CfgGen (Uid, Uid)
+create :: (UidSet -> UidSet -> CfgGenNode) -> CfgGen (Uid, Uid)
 create con = do p <- nop
                 s <- nop
                 n <- nuid
-                addNode $ con [] [] n
+                setNode n $ con UidSet.empty UidSet.empty
                 addPred p n
                 addSucc s n
                 addSucc n p
