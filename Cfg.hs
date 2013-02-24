@@ -121,8 +121,16 @@ fromProgram :: Program -> CfgGen Cfg
 fromProgram = undefined
 
 fromFunction :: Function -> CfgGen Cfg
-fromFunction = undefined
+fromFunction (FNamed name formals body retval) = do fs <- create $ GNDecl formals
+                                                    bo <- fromStm body
+                                                    re <- create $ GNReturn retval
+                                                    most <- fs `chain` bo
+                                                    whole <- most `chain` re
+                                                    toCfg whole
+fromFunction _ = error "Unweeded function"
 
+toCfg :: (Uid, Uid) -> CfgGen Cfg
+toCfg = undefined
 
 -- Functions that build intermediate CFG representation
 
@@ -151,6 +159,6 @@ fromStm s@(SWhile cond body) = do (bp, bs) <- fromStm body
                                   connect [uid] [ns, bp]
                                   return (np, ns)
 fromStm (SDecl ids) = create $ GNDecl ids
-fromStm (SReturn e) = create $ GNReturn e
+fromStm (SReturn _) = error $ "Return statement not weeded out"
 fromStm SNop = create GNNop
 
