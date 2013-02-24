@@ -56,12 +56,15 @@ checkExpr s (EMalloc _)               = return ()
 checkExpr s (ENull _)                 = return ()
 
 intro :: IdSet -> Id -> IntroTracker IdSet
-intro scope id = if id `Set.member` scope then error $
-                 "The identifier " ++ iVal id ++ " cannot be shadowed"
-                 else do intros <- get
-                         if id `Set.member` intros
-                           then error $ "The identifier " ++ iVal id ++ " is used in two different scopes"
-                           else put (id `Set.insert` intros) >> return (id `Set.insert` scope)
+intro scope id = do intros  <- get
+                    let intros' = id `Set.insert` intros
+                        scope'  = id `Set.insert` scope
+                    cond [(id `Set.member` scope  , error $ noShadow id         )
+                         ,(id `Set.member` intros , error $ notUnique id        )
+                         ,(otherwise              , put intros' >> return scope')]
+  where cond ((p,v):ls) = if p then v else cond ls
+        noShadow id     = "The identifier " ++ iVal id ++ " cannot be shadowed"
+        notUnique id    = "The identifier " ++ iVal id ++ " is used in two different scopes"
 
 check :: IdSet -> Id -> IntroTracker ()
 check scope id = unless (id `Set.member` scope) $ error $
