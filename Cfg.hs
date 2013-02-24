@@ -35,18 +35,17 @@ data CfgGenNode = GNAss    { gnStm :: Stm,
                              gnPred :: UidSet, gnSucc :: UidSet }
                 | GNNop    { gnPred :: UidSet, gnSucc :: UidSet }
 
-data CfgGenState = CfgGenState { gsNuid :: Uid, gsNodes :: UidMap CfgGenNode }
-
-type CfgGen = State CfgGenState
+type UidState = State Uidt
+type CfgGen = StateT (UidMap CfgGenNode) UidState
 
 
 -- Utility functions for handling state
 
 nuid :: CfgGen Uid
-nuid = state $ \st -> (gsNuid st, st { gsNuid = gsNuid st + 1 })
+nuid = lift . state $ \uid -> (uid, uid + 1)
 
 modifyNodes :: (UidMap CfgGenNode -> UidMap CfgGenNode) -> CfgGen ()
-modifyNodes f = modify $ \st -> st { gsNodes = f $ gsNodes st }
+modifyNodes f = modify f
 
 modifyNode :: (CfgGenNode -> CfgGenNode) -> Uid -> CfgGen ()
 modifyNode f = modifyNodes . UidMap.adjust f
@@ -56,7 +55,7 @@ setNode uid = modifyNodes . UidMap.insert uid
 
 -- Precondition: uid in map
 getNode :: Uid -> CfgGen CfgGenNode
-getNode uid = (UidMap.! uid) `liftM` gets gsNodes
+getNode uid = (UidMap.! uid) `liftM` get
 
 -- Precondition: uid in map
 getsNode :: (CfgGenNode -> a) -> Uid -> CfgGen a
