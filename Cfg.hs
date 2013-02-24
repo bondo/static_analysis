@@ -35,7 +35,7 @@ data CfgGenNode = GNAss    { gnStm :: Stm,
                              gnPred :: UidSet, gnSucc :: UidSet }
                 | GNNop    { gnPred :: UidSet, gnSucc :: UidSet }
 
-type UidState = State Uidt
+type UidState = State Uid
 type CfgGen = StateT (UidMap CfgGenNode) UidState
 
 
