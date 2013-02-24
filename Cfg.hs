@@ -2,7 +2,6 @@ module Cfg (cfgFromProgram, Cfg(..), CfgNode(..)) where
 
 import Ast
 
-import Control.Monad (mapM_, liftM)
 import Control.Monad.State
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as UidMap
@@ -42,7 +41,7 @@ type CfgGen = StateT (UidMap CfgGenNode) UidState
 -- Utility functions for handling state
 
 nuid :: CfgGen Uid
-nuid = lift . state $ \uid -> (uid, uid + 1)
+nuid = lift $ modify (+1) >> get
 
 modifyNodes :: (UidMap CfgGenNode -> UidMap CfgGenNode) -> CfgGen ()
 modifyNodes f = modify f
@@ -84,6 +83,9 @@ setSuccs succs = modifyNode $ \n -> n { gnSucc = UidSet.fromList succs }
 
 -- Utility functions for handling CFG nodes
 
+connect :: [Uid] -> [Uid] -> CfgGen ()
+connect ps ss = forM_ ps $ \p -> forM_ ss $ \s -> addPred p s >> addSucc s p
+
 nop :: CfgGen Uid
 nop = do uid <- nuid
          setNode uid $ GNNop UidSet.empty UidSet.empty
@@ -101,10 +103,8 @@ create con = do p <- nop
                 s <- nop
                 n <- nuid
                 setNode n $ con UidSet.empty UidSet.empty
-                addPred p n
-                addSucc s n
-                addSucc n p
-                addPred n s
+                connect [p] [n]
+                connect [n] [s]
                 return (p, s)
 
 
@@ -123,4 +123,30 @@ fromFunction = undefined
 -- Functions that build intermediate CFG representation
 
 fromStm :: Stm -> CfgGen (Uid, Uid)
-fromStm s@SAss{} = undefined
+fromStm s@SAss{}        = create $ GNAss s
+fromStm s@SAssRef{}     = create $ GNAss s
+fromStm (SOutput e)     = create $ GNOutput e
+fromStm (SSeq ss@(_:_)) = mapM fromStm ss >>= \(s':ss') -> foldM chain s' ss'
+fromStm (SSeq _)        = error "Empty sequence of statements not weeded out"
+fromStm s@(SIfElse cond th el) = do (tp, ts) <- fromStm th
+                                    (ep, es) <- fromStm el
+                                    np <- nop
+                                    ns <- nop
+                                    uid <- nuid
+                                    setNode uid $ GNBranch cond s tp ep UidSet.empty UidSet.empty
+                                    connect [np] [uid]
+                                    connect [uid] [tp, ep]
+                                    connect [ts, es] [ns]
+                                    return (np, ns)
+fromStm s@(SWhile cond body) = do (bp, bs) <- fromStm body
+                                  np <- nop
+                                  ns <- nop
+                                  uid <- nuid
+                                  setNode uid $ GNBranch cond s bp bs UidSet.empty UidSet.empty
+                                  connect [np, bs] [uid]
+                                  connect [uid] [ns, bp]
+                                  return (np, ns)
+fromStm (SDecl ids) = create $ GNDecl ids
+fromStm (SReturn _) = error $ "Return statement not weeded out"
+fromStm SNop = create GNNop
+
