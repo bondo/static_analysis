@@ -22,6 +22,8 @@ data CfgNode = CAss    { cStm :: Stm,
                          cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
              | CDecl   { cIds :: [Id],
                          cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
+             | CReturn { cExpr :: Expr,
+                         cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
              | CNop    { cPred :: [CfgNode], cSucc :: [CfgNode], cUid :: Uid }
 
 data CfgGenNode = GNAss    { gnStm :: Stm,
@@ -31,6 +33,8 @@ data CfgGenNode = GNAss    { gnStm :: Stm,
                 | GNBranch { gnExpr :: Expr, gnStm :: Stm, gnTrue :: Uid, gnFalse :: Uid,
                              gnPred :: UidSet, gnSucc :: UidSet }
                 | GNDecl   { gnIds :: [Id],
+                             gnPred :: UidSet, gnSucc :: UidSet }
+                | GNReturn { gnExpr :: Expr,
                              gnPred :: UidSet, gnSucc :: UidSet }
                 | GNNop    { gnPred :: UidSet, gnSucc :: UidSet }
 
@@ -147,6 +151,6 @@ fromStm s@(SWhile cond body) = do (bp, bs) <- fromStm body
                                   connect [uid] [ns, bp]
                                   return (np, ns)
 fromStm (SDecl ids) = create $ GNDecl ids
-fromStm (SReturn _) = error $ "Return statement not weeded out"
+fromStm (SReturn e) = create $ GNReturn e
 fromStm SNop = create GNNop
 
